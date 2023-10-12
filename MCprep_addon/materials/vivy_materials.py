@@ -18,6 +18,7 @@
 
 import bpy
 from bpy.types import Context, Material
+from bpy_extras.io_utils import ImportHelper
 
 import os
 from dataclasses import dataclass
@@ -328,22 +329,193 @@ class VIVY_OT_materials(bpy.types.Operator, VivyMaterialProps):
 				{"ERROR"},
 				"Nothing modified, be sure you selected objects with existing materials!"
 			)
+		
+		for obj in obj_list:
+			obj["VIVY_PREPPED"] = True
+			obj["VIVY_MATERIAL_NAME"] = self.materialName
 
 		addon_prefs = util.get_user_preferences(context)
 		self.track_param = context.scene.render.engine
 		self.track_exporter = addon_prefs.MCprep_exporter_type
 		return {'FINISHED'}
 
+class VIVY_OT_swap_texture_pack(
+	bpy.types.Operator, ImportHelper, VivyMaterialProps):
+	"""Swap current textures for that of a texture pack folder"""
+	bl_idname = "vivy.swap_texture_pack"
+	bl_label = "Swap Texture Pack"
+	bl_description = (
+		"Change the texture pack for all materials of selected objects, "
+		"select a folder path for an unzipped resource pack or texture folder")
+	bl_options = {'REGISTER', 'UNDO'}
+
+	filter_glob: bpy.props.StringProperty(
+		default="",
+		options={"HIDDEN"})
+	use_filter_folder = True
+	fileselectparams = "use_filter_blender"
+	filepath: bpy.props.StringProperty(subtype="DIR_PATH")
+	filter_image: bpy.props.BoolProperty(
+		default=True,
+		options={"HIDDEN", "SKIP_SAVE"})
+	filter_folder: bpy.props.BoolProperty(
+		default=True,
+		options={"HIDDEN", "SKIP_SAVE"})
+
+	@classmethod
+	def poll(cls, context):
+		addon_prefs = util.get_user_preferences(context)
+		if addon_prefs.MCprep_exporter_type != "(choose)":
+			return util.is_atlas_export(context)
+		return False
+
+	def draw(self, context):
+		row = self.layout.row()
+		col = row.column()
+		subcol = col.column()
+		subcol.scale_y = 0.7
+		subcol.label(text="Select any subfolder of an")
+		subcol.label(text="unzipped texture pack, then")
+		subcol.label(text="press 'Swap Texture Pack'")
+		subcol.label(text="after confirming these")
+
+	track_function = "vivy_texture_pack"
+	track_param = None
+	track_exporter = None
+	@tracking.report_error
+	def execute(self, context):
+		addon_prefs = util.get_user_preferences(context)
+
+		# check folder exist, but keep relative if relevant
+		folder = self.filepath
+		if os.path.isfile(bpy.path.abspath(folder)):
+			folder = os.path.dirname(folder)
+		env.log(f"Folder: {folder}")
+
+		if not os.path.isdir(bpy.path.abspath(folder)):
+			self.report({'ERROR'}, "Selected folder does not exist")
+			return {'CANCELLED'}
+
+		# get list of selected objects
+		obj_list = context.selected_objects
+		if len(obj_list) == 0:
+			self.report({'ERROR'}, "No objects selected")
+			return {'CANCELLED'}
+		
+		mtype = None
+		for obj in obj_list:
+			if "VIVY_PREPPED" not in obj:
+				self.report({'ERROR'}, "OBJ needs to be prepped first!")
+				return {'CANCELLED'}
+			
+			material_types = {}
+			if obj["VIVY_MATERIAL_NAME"] not in material_types:
+				material_types[obj["VIVY_MATERIAL_NAME"]] = 0
+			else:
+				material_types[obj["VIVY_MATERIAL_NAME"]] += 1
+			
+			if len(material_types) > 1:
+				self.report({'ERROR'}, "Multiple material types at once for texture swap not supported yet!")
+				return {'CANCELED'}
+
+			mtype = obj["VIVY_MATERIAL_NAME"]
+
+		# gets the list of materials (without repetition) from selected
+		mat_list = util.materialsFromObj(obj_list)
+		if len(obj_list) == 0:
+			self.report({'ERROR'}, "No materials found on selected objects")
+			return {'CANCELLED'}
+		_ = generate.detect_form(mat_list)
+
+		self.track_exporter = addon_prefs.MCprep_exporter_type
+
+		# set the scene's folder for the texturepack being swapped
+		context.scene.mcprep_texturepack_path = folder
+
+		env.log(f"Materials detected: {len(mat_list)}")
+		res = 0
+		for mat in mat_list:
+			self.preprocess_material(mat)
+			res += self.set_texture_pack(mat, folder, mtype)
+			self.report({'INFO'}, f"{res} materials affected")
+		self.track_param = context.scene.render.engine
+		return {'FINISHED'}
+	
+	def preprocess_material(self, material):
+		"""Preprocess materials for special edge cases"""
+
+		# in texture packs, this is actually just a transparent overaly -
+		# but in Mineways export, this is the flattened grass/drit block side
+		if material.name == "grass_block_side_overlay":
+			material.name = "grass_block_side"
+			env.log("Renamed material: grass_block_side_overlay to grass_block_side")
+	
+	def set_texture_pack(self, material: Material, folder: Path, material_type: str) -> bool:
+		"""Replace existing material's image with texture pack's.
+
+		Run through and check for each if counterpart material exists, then
+		run the swap (and auto load e.g. normals and specs if avail.)
+		"""
+		mc_name, _ = get_mc_canonical_name(material.name)
+		image = generate.find_from_texturepack(mc_name, folder)
+		if image is None:
+			return False
+
+		image_data = util.loadTexture(image)
+		_ = self.set_cycles_texture(image_data, material, material_type, True)
+		return True
+
+	def set_cycles_texture(self, image: generate.Image, material: Material, type: str, extra_passes: bool=False) -> bool:
+		"""
+		Used by skin swap and assiging missing textures or tex swapping.
+		Args:
+			image: already loaded image datablock
+			material: existing material datablock
+			extra_passes: whether to include or hard exclude non diffuse passes
+		"""
+		env.log(f"Setting cycles texture for img: {image.name} mat: {material.name}")
+		if material.node_tree is None:
+			return False
+		# check if there is more data to see pass types
+		img_sets = {}
+		if extra_passes:
+			img_sets = generate.find_additional_passes(image.filepath)
+		changed = False
+		
+		p = env.vivy_material_json["materials"][type]["passes"]
+		print(p)
+		diffuse = p["diffuse"] if "diffuse" in p else None
+		specular = p["specular"] if "specular" in p else None
+		normal = p["normal"] if "normal" in p else None
+
+		nodes = material.node_tree.nodes
+		if diffuse is not None:
+			d = nodes.get(diffuse)
+			d.image = image
+		if specular is not None:
+			s = nodes.get(specular)
+			if "specular" in img_sets:
+				new_img = util.loadTexture(img_sets["specular"])
+				s.image = new_img
+				util.apply_colorspace(s, 'Non-Color')
+		if normal is not None:
+			n = nodes.get(normal)
+			if "normal" in img_sets:
+				new_img = util.loadTexture(img_sets["normal"])
+				n.image = new_img
+				util.apply_colorspace(n, 'Non-Color')
+		changed = True
+		return changed
+
 classes = (
 	VIVY_OT_materials,
+	VIVY_OT_swap_texture_pack,
 )
-
 
 def register():
 	for cls in classes:
 		bpy.utils.register_class(cls)
 	bpy.app.handlers.load_post.append(sync.clear_sync_cache)
-
 
 def unregister():
 	for cls in reversed(classes):

@@ -779,7 +779,7 @@ class MCPREP_PT_world_imports(bpy.types.Panel):
 				"mcprep.open_help", text="", icon="QUESTION", emboss=False
 			).url = "https://github.com/TheDuckCow/MCprep/blob/master/docs/common_errors.md#common-error-messages-and-what-they-mean"
 			row.label(text="OBJ incompatible with textureswap")
-		p = col.operator("mcprep.swap_texture_pack")
+		p = col.operator("vivy.swap_texture_pack")
 		p.filepath = context.scene.mcprep_texturepack_path
 		if context.mode == "OBJECT":
 			col.operator("mcprep.meshswap", text="Mesh Swap")
