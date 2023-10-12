@@ -106,22 +106,28 @@ def set_material(context: Context, material: Material, options: VivyOptions) -> 
 		return f"Could not import {material.name}"
 	selected_material = list(imported)[0]
 	
-	# Set the diffuse pass
-	new_material_nodes = selected_material.node_tree.nodes
-	if not new_material_nodes.get(options.material.passes.diffuse):
-		return "Material has no diffuse node"
+	# Set the passes
+	passes = [(options.material.passes.diffuse, "diffuse"), 
+		   (options.material.passes.specular, "specular"), 
+		   (options.material.passes.normal, "normal")]
 
-	if not material.node_tree.nodes:
-		return "Material has no nodes"
+	for p in passes:
+		if p[0] is not None:
+			new_material_nodes = selected_material.node_tree.nodes
+			if not new_material_nodes.get(p[0]):
+				return f"Material has no {p[1]} node"
 
-	nnodes = selected_material.node_tree.nodes
-	material_nodes = material.node_tree.nodes
+			if not material.node_tree.nodes:
+				return "Material has no nodes"
 
-	if not material_nodes.get("Image Texture"):
-		return "Material has no Image Texture node"
+			nnodes = selected_material.node_tree.nodes
+			material_nodes = material.node_tree.nodes
 
-	nnode_diffuse = nnodes.get(options.material.passes.diffuse)
-	nnode_diffuse.image = options.passes["diffuse"]
+			if not material_nodes.get("Image Texture"):
+				return "Material has no Image Texture node"
+
+			nnode_diffuse = nnodes.get(p[0])
+			nnode_diffuse.image = options.passes[p[1]]
 
 	material.user_remap(selected_material)
 
@@ -131,14 +137,12 @@ def set_material(context: Context, material: Material, options: VivyOptions) -> 
 	return None
 
 def get_vivy_blend(context: Context) -> Path:
-	"""Return the sync blend file path that might exist, based on active pack"""
-	resource_pack = bpy.path.abspath(context.scene.mcprep_texturepack_path)
-	return Path(os.path.join(resource_pack, "vivy_materials.blend"))
+	"""Return the path of the Vivy material library"""
+	return Path(os.path.join(env.json_path.parent, "vivy_materials.blend"))
 
 def get_vivy_json(context: Context) -> Path:
-	"""Return the sync blend file path that might exist, based on active pack"""
-	resource_pack = bpy.path.abspath(context.scene.mcprep_texturepack_path)
-	return Path(os.path.join(resource_pack, "vivy_materials.json"))
+	"""Return the path of the Vivy JSON file"""
+	return Path(os.path.join(env.json_path.parent, "vivy_materials.json"))
 
 def generate_vivy_materials(self, context, options: VivyOptions):
 	# Sync file stuff.
