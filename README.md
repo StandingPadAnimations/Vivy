@@ -18,5 +18,8 @@ The features Vivy aims to add would have one or more of the following issues:
 
 As such, it's simply easier to make a fork, and implement those features in said fork; the stuff Vivy plans to do would clash with MCprep's design goals. Contrary to popular belief, forks don't mean all out war, and in this case are a win-win for all involved.
 
+## So how does Vivy give more control?
+Vivy gives more control through MCprep's material generation, which is perhaps the most used feature of MCprep. This is done by throwing out MCprep's old system (although it's still technically accessible) and replacing it with a system where users can define custom materials using a blend file and some JSON.
+
 # Why the name Vivy?
 It's based off of a light novel I got and I thought it was a nice name, hence the name Vivy for this project :D
