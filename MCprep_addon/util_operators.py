@@ -172,6 +172,25 @@ class MCPREP_OT_open_help(bpy.types.Operator):
 			bpy.ops.wm.url_open(url=self.url)
 		return {'FINISHED'}
 
+class MCPREP_OT_open_file(bpy.types.Operator):
+	"""Support operator for opening file in UI, but indicating through popup
+	text that it is a supporting/help button"""
+	bl_idname = "mcprep.open_file"
+	bl_label = "Open file"
+	bl_description = "Click to open a file"
+
+	file: bpy.props.StringProperty(
+		name="File",
+		default="")
+
+	@tracking.report_error
+	def execute(self, context):
+		if self.file == "":
+			return {'CANCELLED'}
+		else:
+			bpy.ops.wm.open_mainfile(filepath=self.file)
+		return {'FINISHED'}
+
 
 class MCPREP_OT_prep_material_legacy(bpy.types.Operator):
 	"""Legacy operator which calls new operator, use mcprep.prep_material"""
@@ -218,6 +237,7 @@ classes = (
 	MCPREP_OT_show_preferences,
 	MCPREP_OT_open_folder,
 	MCPREP_OT_open_help,
+	MCPREP_OT_open_file,
 	MCPREP_OT_prep_material_legacy
 )
 

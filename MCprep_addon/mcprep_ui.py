@@ -18,6 +18,7 @@
 
 import os
 import time
+from .materials import vivy_materials
 
 # library imports
 import bpy
@@ -772,6 +773,7 @@ class MCPREP_PT_world_imports(bpy.types.Panel):
 		col = split.column(align=True)
 		col.label(text="Vivy tools")
 		col.operator("vivy.prep_materials", text="Prep Materials")
+		col.operator("mcprep.open_file", text="Edit Vivi Material Library").file=str(vivy_materials.get_vivy_blend())
 
 		if not util.is_atlas_export(context):
 			row = col.row()
