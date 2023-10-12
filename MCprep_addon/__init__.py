@@ -39,16 +39,16 @@ Disclaimer: This is not an official Google product
 # 								error = 51
 
 bl_info = {
-	"name": "MCprep",
+	"name": "Vivy",
 	"category": "Object",
 	"version": (3, 5, 0),
 	"blender": (2, 80, 0),
 	"location": "3D window toolshelf > MCprep tab",
 	"description": "Minecraft workflow addon for rendering and animation",
 	"warning": "",
-	"wiki_url": "https://TheDuckCow.com/MCprep",
-	"author": "Patrick W. Crawford <support@theduckcow.com>",
-	"tracker_url": "https://github.com/TheDuckCow/MCprep/issues"
+	"wiki_url": "",
+	"author": "Mahid A. Sheikh/StandingPad <mahidsheikh@proton.me>",
+	"tracker_url": ""
 }
 
 import importlib
