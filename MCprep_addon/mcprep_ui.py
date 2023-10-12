@@ -770,7 +770,7 @@ class MCPREP_PT_world_imports(bpy.types.Panel):
 
 		split = layout.split()
 		col = split.column(align=True)
-		col.label(text="MCprep tools")
+		col.label(text="Vivy tools")
 		col.operator("vivy.prep_materials", text="Prep Materials")
 
 		if not util.is_atlas_export(context):
@@ -1059,7 +1059,7 @@ class MCPREP_PT_skins(bpy.types.Panel):
 
 class MCPREP_PT_materials(bpy.types.Panel):
 	"""MCprep panel for materials"""
-	bl_label = "MCprep materials"
+	bl_label = "Vivy materials"
 	bl_space_type = "PROPERTIES"
 	bl_region_type = 'WINDOW'
 	bl_context = "material"
