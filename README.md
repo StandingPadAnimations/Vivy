@@ -1,6 +1,11 @@
 # Vivy
 A fork of MCprep that gives more control to the user
 
+# Quick Start
+Vivi is installed just like MCprep, and for the most part can be used like MCprep, except for materials.
+
+To get started with Vivy's material system, check the [wiki](https://github.com/StandingPadAnimations/Vivy/wiki)
+
 # Why?
 I'm an MCprep maintainer, so it might seem strange that I would make a fork of MCprep, but hear me out for a bit.
 
