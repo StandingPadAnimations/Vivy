@@ -189,6 +189,28 @@ def draw_mats_common(self, context: Context) -> None:
 	row = self.layout.row()
 	row.prop(self, "materialName")
 
+	md = env.vivy_material_json["materials"][self.materialName]
+	row = self.layout.row()
+	row.label(text=md["desc"])
+	
+	box = self.layout.box()
+	box.label(text="Expects the following passes:")
+	row = box.row()
+	row.label(text="Diffuse", icon="MATERIAL")
+	if "specular" in md["passes"]:
+		row = box.row()
+		row.label(text="Specular", icon="NODE_MATERIAL")
+	if "normal" in md["passes"]:
+		row = box.row()
+		row.label(text="Normal", icon="ORIENTATION_NORMAL")
+	
+	if "extensions" in md:
+		box = self.layout.box()
+		box.label(text="Has extensions for the following:")
+		if "emissive" in md["extensions"]:
+			row = box.row()
+			row.label(text="Emission", icon="OUTLINER_OB_LIGHT")
+
 class VIVY_OT_materials(bpy.types.Operator, VivyMaterialProps):
 	"""
 	Vivy's custom material generator that 
