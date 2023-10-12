@@ -42,6 +42,9 @@ class ViviPasses:
 @dataclass
 class ViviExtensions:
 	emissive: Optional[str]
+	reflective: Optional[str]
+	metallic: Optional[str]
+	glass: Optional[str]
 
 @dataclass
 class VivyMaterial:
@@ -86,6 +89,21 @@ def set_material(context: Context, material: Material, options: VivyOptions) -> 
 			canon, _ = get_mc_canonical_name(matGen)
 			if checklist(canon, "emit"):
 				options.material.base_material = ext.emissive
+		if ext.reflective is not None:
+			matGen = util.nameGeneralize(options.source_mat)
+			canon, _ = get_mc_canonical_name(matGen)
+			if checklist(canon, "reflective"):
+				options.material.base_material = ext.reflective
+		if ext.metallic is not None:
+			matGen = util.nameGeneralize(options.source_mat)
+			canon, _ = get_mc_canonical_name(matGen)
+			if checklist(canon, "metallic"):
+				options.material.base_material = ext.metallic
+		if ext.glass is not None:
+			matGen = util.nameGeneralize(options.source_mat)
+			canon, _ = get_mc_canonical_name(matGen)
+			if checklist(canon, "glass"):
+				options.material.base_material = ext.glass
 
 	import_name: Optional[str] = None
 	if options.material.base_material in env.vivy_cache:
@@ -215,6 +233,15 @@ def draw_mats_common(self, context: Context) -> None:
 		if "emissive" in md["extensions"]:
 			row = box.row()
 			row.label(text="Emission", icon="OUTLINER_OB_LIGHT")
+		if "reflective" in md["extensions"]:
+			row = box.row()
+			row.label(text="Glossy", icon="NODE_MATERIAL")
+		if "metallic" in md["extensions"]:
+			row = box.row()
+			row.label(text="Metalic", icon="NODE_MATERIAL")
+		if "glass" in md["extensions"]:
+			row = box.row()
+			row.label(text="Transmissive", icon="OUTLINER_OB_LIGHTPROBE")
 
 class VIVY_OT_materials(bpy.types.Operator, VivyMaterialProps):
 	"""
@@ -305,7 +332,10 @@ class VIVY_OT_materials(bpy.types.Operator, VivyMaterialProps):
 							normal=md["passes"]["normal"] if "normal" in md["passes"] else None
 						),
 						extensions=None if "extensions" not in md else ViviExtensions(
-							emissive=md["extensions"]["emissive"] if "emissive" in md["extensions"] else None
+							emissive=md["extensions"]["emissive"] if "emissive" in md["extensions"] else None,
+							reflective=md["extensions"]["reflective"] if "reflecive" in md["extensions"] else None,
+							metallic=md["extensions"]["metallic"] if "metallic" in md["extensions"] else None,
+							glass=md["extensions"]["glass"] if "glass" in md["extensions"] else None
 						)
 					),
 					passes=passes
