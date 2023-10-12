@@ -1,5 +1,5 @@
 # Vivy
-A fork of MCprep that gives more control to the user
+My in-house fork of MCprep that gives more control to the user
 
 # Why?
 I'm an MCprep maintainer, so it might seem strange that I would make a fork of MCprep, but hear me out for a bit.
@@ -20,6 +20,9 @@ As such, it's simply easier to make a fork, and implement those features in said
 
 ## So how does Vivy give more control?
 Vivy gives more control through MCprep's material generation, which is perhaps the most used feature of MCprep. This is done by throwing out MCprep's old system (although it's still technically accessible) and replacing it with a system where users can define custom materials using a blend file and some JSON.
+
+## Is there documentation on how to use this?
+Maybe in the future, but for now it's basically my in house fork of MCprep for personal use.
 
 # Why the name Vivy?
 It's based off of a light novel I got and I thought it was a nice name, hence the name Vivy for this project :D
