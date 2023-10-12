@@ -41,14 +41,14 @@ Disclaimer: This is not an official Google product
 bl_info = {
 	"name": "Vivy",
 	"category": "Object",
-	"version": (3, 5, 0),
-	"blender": (2, 80, 0),
+	"version": (0, 1, 0),
+	"blender": (3, 0, 0),
 	"location": "3D window toolshelf > MCprep tab",
 	"description": "Minecraft workflow addon for rendering and animation",
-	"warning": "",
-	"wiki_url": "",
+	"warning": "Still a WIP, expect bugs!",
+	"wiki_url": "https://github.com/StandingPadAnimations/Vivy/wiki",
 	"author": "Mahid A. Sheikh/StandingPad <mahidsheikh@proton.me>",
-	"tracker_url": ""
+	"tracker_url": "https://github.com/StandingPadAnimations/Vivy/issues"
 }
 
 import importlib
