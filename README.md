@@ -11,7 +11,7 @@ However, MCprep's design goals are mainly to appeal to a less advanced userbase.
 Vivy is a fork of MCprep, so any improvements MCprep has Vivy will gain, **but** Vivy aims to appeal to advanced users through control. MCprep doesn't give much control to the user, which is fine for most, but not all. Vivy aims to appeal to those that want more control.
 
 ## If you're an MCprep Maintainer, then why a fork?
-The features Vivy aims to add would have one or more of the following:
+The features Vivy aims to add would have one or more of the following issues:
 - Not easy to turn into a simple UI 
 - Creates issues for non-advanced users
 - Too niche
