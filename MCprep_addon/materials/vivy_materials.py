@@ -218,7 +218,7 @@ class VIVY_OT_materials(bpy.types.Operator, VivyMaterialProps):
 	Prep materials operator
 	"""
 	bl_idname = "vivy.prep_materials"
-	bl_label = "MCprep Materials"
+	bl_label = "Vivy Materials"
 	bl_options = {'REGISTER', 'UNDO'}
 
 
