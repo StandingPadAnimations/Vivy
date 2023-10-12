@@ -27,15 +27,32 @@ import json
 
 from .. import tracking
 from .. import util
-from ..conf import Engine, env
+from ..conf import env
 from . import generate
 from . import sync
+from .generate import checklist, get_mc_canonical_name
+
+@dataclass
+class ViviPasses:
+	diffuse: str 
+	specular: Optional[str]
+	normal: Optional[str]
+
+@dataclass
+class ViviExtensions:
+	emissive: Optional[str]
+
+@dataclass
+class VivyMaterial:
+	base_material: str 
+	desc: str 
+	passes: ViviPasses
+	extensions: Optional[ViviExtensions]
 
 @dataclass
 class VivyOptions:
 	source_mat: str
-	material_name: str
-	material_dict: Dict[str, str]
+	material: VivyMaterial
 	passes: Dict[str, str]
 
 def reload_material_vivy_library(context: Context) -> None:
@@ -60,13 +77,20 @@ def material_in_vivy_library(material: str, context: Context) -> bool:
 		return True
 	return False
 
-def sync_material(context: Context, material: Material, options: VivyOptions) -> Optional[Union[Material, str]]:
-	"""Normal sync material method but with duplication and name change."""
+def set_material(context: Context, material: Material, options: VivyOptions) -> Optional[Union[Material, str]]:
+	if isinstance(options.material.extensions, ViviExtensions):
+		ext = options.material.extensions
+		if ext.emissive is not None:
+			matGen = util.nameGeneralize(options.source_mat)
+			canon, _ = get_mc_canonical_name(matGen)
+			if checklist(canon, "emit"):
+				options.material.base_material = ext.emissive
+
 	import_name: Optional[str] = None
-	if options.material_name in env.vivy_cache:
-		import_name = options.material_name 
-	elif util.nameGeneralize(options.material_name) in env.vivy_cache:
-		import_name = util.nameGeneralize(options.material_name)
+	if options.material.base_material in env.vivy_cache:
+		import_name = options.material.base_material
+	elif util.nameGeneralize(options.material.base_material) in env.vivy_cache:
+		import_name = util.nameGeneralize(options.material.base_material)
 
 	# If link is true, check library material not already linked.
 	sync_file = get_vivy_blend(context)
@@ -81,22 +105,22 @@ def sync_material(context: Context, material: Material, options: VivyOptions) ->
 	if not imported:
 		return f"Could not import {material.name}"
 	selected_material = list(imported)[0]
-
+	
+	# Set the diffuse pass
 	new_material_nodes = selected_material.node_tree.nodes
-	if not new_material_nodes.get(options.material_dict["diffuse"]):
+	if not new_material_nodes.get(options.material.passes.diffuse):
 		return "Material has no diffuse node"
 
 	if not material.node_tree.nodes:
 		return "Material has no nodes"
 
-	# Change the texture.
 	nnodes = selected_material.node_tree.nodes
 	material_nodes = material.node_tree.nodes
 
 	if not material_nodes.get("Image Texture"):
 		return "Material has no Image Texture node"
 
-	nnode_diffuse = nnodes.get(options.material_dict["diffuse"])
+	nnode_diffuse = nnodes.get(options.material.passes.diffuse)
 	nnode_diffuse.image = options.passes["diffuse"]
 
 	material.user_remap(selected_material)
@@ -127,8 +151,8 @@ def generate_vivy_materials(self, context, options: VivyOptions):
 		return {'CANCELLED'}
 
 	# Find the material
-	if not material_in_vivy_library(options.material_name, context):
-		self.report({'ERROR'}, f"Material not found: {options.material_name}")
+	if not material_in_vivy_library(options.material.base_material, context):
+		self.report({'ERROR'}, f"Material not found: {options.material.base_material}")
 		return {'CANCELLED'}
 
 	mat_list = list(bpy.data.materials)
@@ -136,7 +160,7 @@ def generate_vivy_materials(self, context, options: VivyOptions):
 	if len(mat) != 1:
 		self.report({'ERROR'}, f"Could not get {options.source_mat}")
 	try:
-		err = sync_material(context, mat[0], options) # no linking
+		err = set_material(context, mat[0], options) # no linking
 		if err:
 			env.log(err)
 	except Exception as e:
@@ -242,11 +266,22 @@ class VIVY_OT_materials(bpy.types.Operator, VivyMaterialProps):
 							env.vivy_material_json = json.load(f)
 
 				# Set all options and go!
+				md = env.vivy_material_json["materials"][self.materialName]
 				options = VivyOptions(
-					mat.name,
-					env.vivy_material_json["materials"][self.materialName]["name"],
-					env.vivy_material_json["materials"][self.materialName],
-					passes
+					source_mat=mat.name,
+					material=VivyMaterial(
+						base_material=md["base_material"],
+						desc=md["desc"],
+						passes=ViviPasses(
+							diffuse=md["passes"]["diffuse"],
+							specular=md["passes"]["specular"] if "specular" in md["passes"] else None,
+							normal=md["passes"]["normal"] if "normal" in md["passes"] else None
+						),
+						extensions=None if "extensions" not in md else ViviExtensions(
+							emissive=md["extensions"]["emissive"] if "emissive" in md["extensions"] else None
+						)
+					),
+					passes=passes
 				)
 				generate_vivy_materials(self, context, options)
 				count += 1
