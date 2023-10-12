@@ -155,17 +155,17 @@ def set_material(context: Context, material: Material, options: VivyOptions) -> 
 	selected_material.name = m_name
 	return None
 
-def get_vivy_blend(context: Context) -> Path:
+def get_vivy_blend() -> Path:
 	"""Return the path of the Vivy material library"""
 	return Path(os.path.join(env.json_path.parent, "vivy_materials.blend"))
 
-def get_vivy_json(context: Context) -> Path:
+def get_vivy_json() -> Path:
 	"""Return the path of the Vivy JSON file"""
 	return Path(os.path.join(env.json_path.parent, "vivy_materials.json"))
 
 def generate_vivy_materials(self, context, options: VivyOptions):
 	# Sync file stuff.
-	sync_file = get_vivy_blend(context)
+	sync_file = get_vivy_blend()
 	if not os.path.isfile(sync_file):
 		self.report({'ERROR'}, f"Sync file not found: {sync_file}")
 		return {'CANCELLED'}
@@ -195,7 +195,7 @@ Panel related parts below
 class VivyMaterialProps():
 	def get_materials(self, context):
 		if env.vivy_material_json is None:
-			with open(get_vivy_json(context), 'r') as f:
+			with open(get_vivy_json(), 'r') as f:
 				env.vivy_material_json = json.load(f)
 		itms = []
 		for m, d in env.vivy_material_json["materials"].items():
@@ -316,7 +316,7 @@ class VIVY_OT_materials(bpy.types.Operator, VivyMaterialProps):
 				# Make sure Vivy has loaded the JSON
 				if not isinstance(env.vivy_material_json, Dict):
 					if env.vivy_material_json is None:
-						with open(get_vivy_json(context), 'r') as f:
+						with open(get_vivy_json(), 'r') as f:
 							env.vivy_material_json = json.load(f)
 
 				# Set all options and go!
