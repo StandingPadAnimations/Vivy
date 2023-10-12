@@ -503,12 +503,12 @@ class TRACK_OT_toggle_enable_tracking(bpy.types.Operator):
 		if not VALID_IMPORT:
 			self.report({"ERROR"}, "Invalid import, all reporting disabled.")
 			return {'CANCELLED'}
-		if self.tracking == "toggle":
-			Tracker.enable_tracking(toggle=True)
-		elif self.tracking == "enable":
-			Tracker.enable_tracking(toggle=False, enable=True)
-		else:
-			Tracker.enable_tracking(toggle=False, enable=False)
+		#if self.tracking == "toggle":
+		#	Tracker.enable_tracking(toggle=True)
+		#elif self.tracking == "enable":
+		#	Tracker.enable_tracking(toggle=False, enable=True)
+		#else:
+		Tracker.enable_tracking(toggle=False, enable=False)
 		return {'FINISHED'}
 
 
