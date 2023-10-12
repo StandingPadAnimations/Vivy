@@ -35,6 +35,7 @@ from . import sync
 class VivyOptions:
 	source_mat: str
 	material_name: str
+	material_dict: Dict[str, str]
 	passes: Dict[str, str]
 
 def reload_material_vivy_library(context: Context) -> None:
@@ -82,8 +83,8 @@ def sync_material(context: Context, material: Material, options: VivyOptions) ->
 	selected_material = list(imported)[0]
 
 	new_material_nodes = selected_material.node_tree.nodes
-	if not new_material_nodes.get("MCPREP_DIFFUSE"):
-		return "Material has no MCPREP_diffuse node"
+	if not new_material_nodes.get(options.material_dict["diffuse"]):
+		return "Material has no diffuse node"
 
 	if not material.node_tree.nodes:
 		return "Material has no nodes"
@@ -95,7 +96,7 @@ def sync_material(context: Context, material: Material, options: VivyOptions) ->
 	if not material_nodes.get("Image Texture"):
 		return "Material has no Image Texture node"
 
-	nnode_diffuse = nnodes.get("MCPREP_DIFFUSE")
+	nnode_diffuse = nnodes.get(options.material_dict["diffuse"])
 	nnode_diffuse.image = options.passes["diffuse"]
 
 	material.user_remap(selected_material)
@@ -144,16 +145,14 @@ def generate_vivy_materials(self, context, options: VivyOptions):
 """
 Panel related parts below
 """
-
 class VivyMaterialProps():
 	def get_materials(self, context):
-		"""Blender version-dependant format for cycles/eevee material formats."""
 		if env.vivy_material_json is None:
 			with open(get_vivy_json(context), 'r') as f:
 				env.vivy_material_json = json.load(f)
 		itms = []
 		for m, d in env.vivy_material_json["materials"].items():
-			itms.append((d["name"], m, d["desc"]))
+			itms.append((m, m, d["desc"]))
 		return itms
 
 	materialName: bpy.props.EnumProperty(
@@ -236,9 +235,17 @@ class VIVY_OT_materials(bpy.types.Operator, VivyMaterialProps):
 							check_existing=True)
 
 			if engine == 'CYCLES' or engine == 'BLENDER_EEVEE':
+				# Make sure Vivy has loaded the JSON
+				if not isinstance(env.vivy_material_json, Dict):
+					if env.vivy_material_json is None:
+						with open(get_vivy_json(context), 'r') as f:
+							env.vivy_material_json = json.load(f)
+
+				# Set all options and go!
 				options = VivyOptions(
 					mat.name,
-					self.materialName,
+					env.vivy_material_json["materials"][self.materialName]["name"],
+					env.vivy_material_json["materials"][self.materialName],
 					passes
 				)
 				generate_vivy_materials(self, context, options)
