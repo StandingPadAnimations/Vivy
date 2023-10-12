@@ -771,7 +771,7 @@ class MCPREP_PT_world_imports(bpy.types.Panel):
 		split = layout.split()
 		col = split.column(align=True)
 		col.label(text="MCprep tools")
-		col.operator("mcprep.prep_materials", text="Prep Materials")
+		col.operator("vivy.prep_materials", text="Prep Materials")
 
 		if not util.is_atlas_export(context):
 			row = col.row()

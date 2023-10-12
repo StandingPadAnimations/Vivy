@@ -47,6 +47,11 @@ if "prep" in locals():
 else:
 	from .materials import prep
 
+if "vivy_materials" in locals():
+	importlib.reload(vivy_materials)
+else:
+	from .materials import vivy_materials
+
 if "optimize_scene" in locals():
 	importlib.reload(optimize_scene)
 else:
@@ -168,7 +173,8 @@ module_list = (
 	world_tools,
 	# bridge,
 	mcprep_ui,
-	optimize_scene
+	optimize_scene,
+	vivy_materials
 )
 
 

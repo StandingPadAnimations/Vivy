@@ -18,7 +18,7 @@
 
 from mathutils import Vector
 from pathlib import Path
-from typing import Union, Tuple, List, Dict
+from typing import Optional, Union, Tuple, List, Dict
 import enum
 import os
 
@@ -123,6 +123,13 @@ class MCprepEnv:
 		# that no reading has occurred. If lib not found, will update to [].
 		# If ever changing the resource pack, should also reset to None.
 		self.material_sync_cache = []
+		
+		# Cache for Vivy materials. Identical to self.material_sync_cache, but
+		# as a seperate variable to avoid conflicts
+		self.vivy_cache = None
+		
+		# The JSON file for Vivy's materials
+		self.vivy_material_json: Optional[Dict] = None
 
 	def update_json_dat_path(self):
 		"""If new update file found from install, replace old one with new.
@@ -423,3 +430,4 @@ def unregister():
 	env.skin_list = []
 	env.rig_categories = []
 	env.material_sync_cache = []
+	env.vivy_cache = []
