@@ -47,11 +47,6 @@ if "prep" in locals():
 else:
 	from .materials import prep
 
-if "vivy_materials" in locals():
-	importlib.reload(vivy_materials)
-else:
-	from .materials import vivy_materials
-
 if "optimize_scene" in locals():
 	importlib.reload(optimize_scene)
 else:
@@ -152,6 +147,15 @@ if "generate" in locals():
 else:
 	from .materials import generate
 
+if "vivy_materials" in locals():
+	importlib.reload(vivy_materials)
+else:
+	from .materials import vivy_materials
+
+if "vivy_ui" in locals():
+	importlib.reload(vivy_ui)
+else:
+	from . import vivy_ui 
 
 # Only include those with a register function, which is not all
 module_list = (
@@ -174,7 +178,8 @@ module_list = (
 	# bridge,
 	mcprep_ui,
 	optimize_scene,
-	vivy_materials
+	vivy_materials,
+	vivy_ui
 )
 
 
