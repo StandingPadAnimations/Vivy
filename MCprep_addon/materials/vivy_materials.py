@@ -61,7 +61,7 @@ class VivyOptions:
 
 def reload_material_vivy_library(context: Context) -> None:
 	"""Reloads the library and cache"""
-	sync_file = get_vivy_blend(context)
+	sync_file = get_vivy_blend()
 	if not sync_file.exists():
 		env.log("Vivy file not found", vv_only=True)
 		env.vivy_cache = []
@@ -112,7 +112,7 @@ def set_material(context: Context, material: Material, options: VivyOptions) -> 
 		import_name = util.nameGeneralize(options.material.base_material)
 
 	# If link is true, check library material not already linked.
-	sync_file = get_vivy_blend(context)
+	sync_file = get_vivy_blend()
 
 	init_mats = list(bpy.data.materials)
 	path = os.path.join(str(sync_file), "Material")
