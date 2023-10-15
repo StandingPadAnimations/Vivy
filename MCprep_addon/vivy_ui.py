@@ -36,6 +36,12 @@ class VivyNodeToolProps(bpy.types.PropertyGroup):
                                             maxlen=25,
                                             default="Normal")
 
+    # Selected pass for the UI
+    selected_pass: bpy.props.EnumProperty(name="Set Node as Pass",
+                                          items=[
+                                          ("normal", "Normal", "Normal maps"),
+                                          ("specular", "Specular", "Specular maps")])
+
     # Extensions
     extension_type: bpy.props.EnumProperty(name="Extension Type",
                                            items=[("emit",     "Emissive",     "Emissive Material"),
@@ -57,7 +63,7 @@ class VIVY_OT_register_material(bpy.types.Operator):
         # Check if string has a name
         if context.active_object.active_material.name.strip() == "":
             self.report({'ERROR'}, "Name is required")
-            return {'CANCELED'}
+            return {'CANCELLED'}
         
         # We do seperate open calls because
         # Python is absolutely annoying with doing
@@ -74,8 +80,11 @@ class VIVY_OT_register_material(bpy.types.Operator):
         
         if data is None:
             self.report({'ERROR'}, "No data, report a bug on Vivy's GitHub repo!")
-            return {'CANCELED'}
-
+            return {'CANCELLED'}
+        
+        # Due to how open() behaves, all errors 
+        # will dump back the JSON data so that 
+        # it's not gone after an error
         with open(json_path, 'w') as f:
             active_material = context.active_object.active_material.name
 
@@ -83,7 +92,8 @@ class VIVY_OT_register_material(bpy.types.Operator):
             # which in theory would make this None
             if active_material is None:
                 self.report({'ERROR'}, "No active material selected! Maybe there's no active object?")
-                return {'CANCELED'}
+                json.dump(data, f)
+                return {'CANCELLED'}
             
             # Set the material data
             if "materials" not in data:
@@ -112,7 +122,8 @@ class VIVY_OT_register_material(bpy.types.Operator):
                     mapping[active_material].append(vprop.material_name)
                 else:
                     self.report({'ERROR'}, "Mapping in Vivy JSON is of the incorrect format!")
-                    return {'CANCELED'}
+                    json.dump(data, f)
+                    return {'CANCELLED'}
             json.dump(data, f)
         
         anode = context.active_node
@@ -120,13 +131,98 @@ class VIVY_OT_register_material(bpy.types.Operator):
         env.reload_vivy_json() # Reload once afterwards too
         return {'FINISHED'}
 
+# If the code looks similar to the 
+# code for VIVY_OT_register_material, 
+# that's because I copied pasted the 
+# operator and adjusted some stuff 
+#
+# I'm lazy, I know
+class VIVY_OT_set_pass(bpy.types.Operator):
+    bl_idname = "vivy_node_tools.set_pass"
+    bl_label = "Set Pass for Image Node"
+
+    def execute(self, context):
+        vprop = context.scene.vivy_node_tools
+
+        # Check if string has a name
+        if context.active_object.active_material.name.strip() == "":
+            self.report({'ERROR'}, "Name is required")
+            return {'CANCELLED'}
+        
+        # We do seperate open calls because
+        # Python is absolutely annoying with doing
+        # it all in one block. In theory, a race 
+        # condition exists in this code as the file
+        # referred to in `json_path` may have changed
+        # between calls, but let's hope it doesn't 
+        # manifest itself
+        #
+        # TODO: Figure out how to do this all in one block
+        json_path = vivy_materials.get_vivy_json()
+        env.reload_vivy_json() # To make sure we get the latest data
+        data = env.vivy_material_json
+        
+        if data is None:
+            self.report({'ERROR'}, "No data, report a bug on Vivy's GitHub repo!")
+            return {'CANCELLED'}
+        
+        # Due to how open() behaves, all errors 
+        # will dump back the JSON data so that 
+        # it's not gone after an error
+        with open(json_path, 'w') as f:
+            active_material = context.active_object.active_material.name
+
+            # Blender does allow pinning of a material's nodetree,
+            # which in theory would make this None
+            if active_material is None:
+                self.report({'ERROR'}, "No active material selected! Maybe there's no active object?")
+                json.dump(data, f)
+                return {'CANCELLED'}
+
+            # Set the mapping to use for the UI
+            if "mapping" not in data:
+                self.report({'ERROR'}, "Materials must be registered first!")
+                json.dump(data, f)
+                return {'CANCELLED'}
+            
+            # Set the material data
+            if "materials" not in data:
+                self.report({'ERROR'}, "Materials must be registered first!")
+                json.dump(data, f)
+                return {'CANCELLED'}
+
+            mapping = data["mapping"]
+            mats = data["materials"]
+            if active_material not in mapping:
+                self.report({'ERROR'}, "Active material not used in Vivy library!")
+                json.dump(data, f)
+                return
+            else:
+                amats = mapping[active_material]
+                if isinstance(amats, list):
+                    for m in amats:
+                        mats[m]["passes"][vprop.selected_pass] = vprop.specular_name if vprop.selected_pass == "specular" else vprop.normal_name
+                else:
+                    self.report({'ERROR'}, "Mapping in Vivy JSON is of the incorrect format!")
+                    json.dump(data, f)
+                    return {'CANCELLED'}
+
+            json.dump(data, f)
+        
+        anode = context.active_node
+        anode.name = vprop.specular_name if vprop.selected_pass == "specular" else vprop.normal_name
+        env.reload_vivy_json() # Reload once afterwards too
+        return {'FINISHED'}
+
+
+
 class VIVY_PT_node_tools(bpy.types.Panel):
     bl_label = "Vivy Tools"
     bl_idname = "VIVY_PT_node_tools"
     bl_space_type = 'NODE_EDITOR'
     bl_region_type = 'UI'
     bl_category = "Vivy"
-    bl_context = "scene"
+    bl_context = "scene" 
     
     @classmethod
     def poll(cls, context):
@@ -176,16 +272,20 @@ class VIVY_PT_node_tools(bpy.types.Panel):
                 row = layout.row()
                 row.prop(vprop, "normal_name")
                 row = layout.row()
+                row.prop(vprop, "selected_pass")
+                row = layout.row()
+                row.operator("vivy_node_tools.set_pass")
+                row = layout.row()
             row.prop(vprop, "extension_type")
             row = layout.row()
             row.prop(vprop, "extension_of")
-
 
 
 classes = [
     VivyNodeToolProps,
     VIVY_PT_node_tools,
     VIVY_OT_register_material,
+    VIVY_OT_set_pass
 ]
 
 def register():
