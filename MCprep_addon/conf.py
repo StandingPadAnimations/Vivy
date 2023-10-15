@@ -16,6 +16,7 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
+import json
 from mathutils import Vector
 from pathlib import Path
 from typing import Optional, Union, Tuple, List, Dict
@@ -130,6 +131,16 @@ class MCprepEnv:
 		
 		# The JSON file for Vivy's materials
 		self.vivy_material_json: Optional[Dict] = None
+		self.reload_vivy_json() # Get latest JSON data
+
+	def reload_vivy_json(self) -> None:
+		json_path = Path(os.path.join(os.path.dirname(__file__), "MCprep_resources", "vivy_materials.json"))
+		if not json_path.exists():
+			json_path.touch()
+			self.vivy_material_json = {}
+		else: 
+			with open(json_path, 'r') as f:
+				self.vivy_material_json = json.load(f) if json_path.stat().st_size != 0 else {}
 
 	def update_json_dat_path(self):
 		"""If new update file found from install, replace old one with new.
