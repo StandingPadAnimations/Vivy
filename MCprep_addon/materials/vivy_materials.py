@@ -587,7 +587,11 @@ class VIVY_OT_material_import(bpy.types.Operator, ImportHelper):
 		default='*.zip',
 		options={'HIDDEN'}
 	)
-
+	
+	track_function = "vivy_material_import"
+	track_param = None
+	track_exporter = None
+	@tracking.report_error
 	def execute(self, context):
 		import zipfile
 		path = Path(self.filepath)
