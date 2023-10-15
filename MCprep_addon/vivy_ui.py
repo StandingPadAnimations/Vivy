@@ -113,13 +113,17 @@ class VIVY_OT_register_material(bpy.types.Operator):
             mapping = data["mapping"]
             
             if active_material not in mapping:
-                mapping[active_material] = [vprop.material_name]
+                mapping[active_material] = [{
+                                        "material" : vprop.material_name
+                                    }]
             else:
                 # Check if it's actually a list. If it is, append
                 # to the list. Otherwise, return an error and exit 
                 # gracefully
                 if isinstance(mapping[active_material], list):
-                    mapping[active_material].append(vprop.material_name)
+                    mapping[active_material].append({
+                                                    "material" : vprop.material_name
+                                                })
                 else:
                     self.report({'ERROR'}, "Mapping in Vivy JSON is of the incorrect format!")
                     json.dump(data, f)
@@ -201,7 +205,9 @@ class VIVY_OT_set_pass(bpy.types.Operator):
                 amats = mapping[active_material]
                 if isinstance(amats, list):
                     for m in amats:
-                        mats[m]["passes"][vprop.selected_pass] = vprop.specular_name if vprop.selected_pass == "specular" else vprop.normal_name
+                        if "extension" in m:
+                            continue
+                        mats[m["material"]]["passes"][vprop.selected_pass] = vprop.specular_name if vprop.selected_pass == "specular" else vprop.normal_name
                 else:
                     self.report({'ERROR'}, "Mapping in Vivy JSON is of the incorrect format!")
                     json.dump(data, f)
