@@ -14,7 +14,7 @@ class VivyNodeToolProps(bpy.types.PropertyGroup):
         if env.vivy_material_json is not None:
             if "materials" in env.vivy_material_json:
                 mats = env.vivy_material_json["materials"]
-                itms = [(mat, mat, "") for mat in mats if mat != active_material]
+                itms = [(mat, mat, "") for mat in mats if mat["base_material"] != active_material]
         return itms
 
     # Material name and description
@@ -79,6 +79,10 @@ class VIVY_OT_register_material(bpy.types.Operator):
         
         if data is None:
             self.report({'ERROR'}, "No data, report a bug on Vivy's GitHub repo!")
+            return {'CANCELLED'}
+
+        if vprop.material_name in data["materials"]:
+            self.report({'ERROR'}, "Name already registered!")
             return {'CANCELLED'}
         
         # Due to how open() behaves, all errors 
