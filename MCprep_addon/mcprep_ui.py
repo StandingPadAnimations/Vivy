@@ -774,6 +774,8 @@ class MCPREP_PT_world_imports(bpy.types.Panel):
 		col.label(text="Vivy tools")
 		col.operator("vivy.prep_materials", text="Prep Materials")
 		col.operator("mcprep.open_file", text="Edit Vivi Material Library").file=str(vivy_materials.get_vivy_blend())
+		col.operator("vivy.export_library", text="Export Vivy Material Library")
+		col.operator("vivy.import_library", text="Import Previous Export")
 
 		if not util.is_atlas_export(context):
 			row = col.row()

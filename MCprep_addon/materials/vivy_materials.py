@@ -198,8 +198,9 @@ class VivyMaterialProps():
 			with open(get_vivy_json(), 'r') as f:
 				env.vivy_material_json = json.load(f)
 		itms = []
-		for m, d in env.vivy_material_json["materials"].items():
-			itms.append((m, m, d["desc"]))
+		if "materials" in env.vivy_material_json:
+			for m, d in env.vivy_material_json["materials"].items():
+				itms.append((m, m, d["desc"]))
 		return itms
 
 	materialName: bpy.props.EnumProperty(
@@ -537,10 +538,66 @@ class VIVY_OT_swap_texture_pack(
 		changed = True
 		return changed
 
-classes = (
+class VIVY_OT_material_export(bpy.types.Operator, VivyMaterialProps):
+	"""
+	Export operator for Vivy's material library
+	"""
+	bl_idname = "vivy.export_library"
+	bl_label = "Export Vivy's Material Library"
+	bl_options = {'REGISTER'}
+	
+	directory: bpy.props.StringProperty(
+        name="Folder to Export To",
+        description="",
+        subtype='DIR_PATH'
+        )
+
+	filter_folder: bpy.props.BoolProperty(
+        default=True,
+        options={"HIDDEN"}
+        )
+	
+	def invoke(self, context, event):
+		context.window_manager.fileselect_add(self)
+		return {'RUNNING_MODAL'}
+
+	track_function = "vivy_material_export"
+	track_param = None
+	track_exporter = None
+	@tracking.report_error
+	def execute(self, context):
+		import zipfile
+		from datetime import date
+		zip_file_name = f"vivy_export-{date.today()}" + '.zip'
+		zip_file_path = Path(self.directory) / Path(zip_file_name)
+		with zipfile.ZipFile(zip_file_path, mode='w') as zf:
+			zf.write(get_vivy_blend(), arcname="vivy_materials.blend")
+			zf.write(get_vivy_json(), arcname="vivy_materials.json")
+		return {'FINISHED'}
+
+class VIVY_OT_material_import(bpy.types.Operator, ImportHelper):
+	bl_label = "Import Vivy Library"
+	bl_idname = "vivy.import_library"
+
+	filter_glob: bpy.props.StringProperty(
+		default='*.zip',
+		options={'HIDDEN'}
+	)
+
+	def execute(self, context):
+		import zipfile
+		path = Path(self.filepath)
+		with zipfile.ZipFile(path, mode="r") as zf:
+			zf.extract("vivy_materials.blend", path=get_vivy_blend().parent)
+			zf.extract("vivy_materials.json", path=get_vivy_json().parent)
+		return {'FINISHED'}
+
+classes = [
 	VIVY_OT_materials,
 	VIVY_OT_swap_texture_pack,
-)
+	VIVY_OT_material_export,
+	VIVY_OT_material_import
+]
 
 def register():
 	for cls in classes:
