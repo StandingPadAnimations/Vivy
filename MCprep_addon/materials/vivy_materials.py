@@ -34,13 +34,13 @@ from . import sync
 from .generate import checklist, get_mc_canonical_name
 
 @dataclass
-class ViviPasses:
+class VivyPasses:
 	diffuse: str 
 	specular: Optional[str]
 	normal: Optional[str]
 
 @dataclass
-class ViviExtensions:
+class VivyRefinements:
 	emissive: Optional[str]
 	reflective: Optional[str]
 	metallic: Optional[str]
@@ -50,8 +50,8 @@ class ViviExtensions:
 class VivyMaterial:
 	base_material: str 
 	desc: str 
-	passes: ViviPasses
-	extensions: Optional[ViviExtensions]
+	passes: VivyPasses
+	refinements: Optional[VivyRefinements]
 
 @dataclass
 class VivyOptions:
@@ -82,8 +82,8 @@ def material_in_vivy_library(material: str, context: Context) -> bool:
 	return False
 
 def set_material(context: Context, material: Material, options: VivyOptions) -> Optional[Union[Material, str]]:
-	if isinstance(options.material.extensions, ViviExtensions):
-		ext = options.material.extensions
+	if isinstance(options.material.refinements, VivyRefinements):
+		ext = options.material.refinements
 		if ext.emissive is not None:
 			matGen = util.nameGeneralize(options.source_mat)
 			canon, _ = get_mc_canonical_name(matGen)
@@ -227,19 +227,19 @@ def draw_mats_common(self, context: Context) -> None:
 		row = box.row()
 		row.label(text="Normal", icon="ORIENTATION_NORMAL")
 	
-	if "extensions" in md:
+	if "refinements" in md:
 		box = self.layout.box()
-		box.label(text="Has extensions for the following:")
-		if "emissive" in md["extensions"]:
+		box.label(text="Has refinements for the following:")
+		if "emissive" in md["refinements"]:
 			row = box.row()
 			row.label(text="Emission", icon="OUTLINER_OB_LIGHT")
-		if "reflective" in md["extensions"]:
+		if "reflective" in md["refinements"]:
 			row = box.row()
 			row.label(text="Glossy", icon="NODE_MATERIAL")
-		if "metallic" in md["extensions"]:
+		if "metallic" in md["refinements"]:
 			row = box.row()
 			row.label(text="Metalic", icon="NODE_MATERIAL")
-		if "glass" in md["extensions"]:
+		if "glass" in md["refinements"]:
 			row = box.row()
 			row.label(text="Transmissive", icon="OUTLINER_OB_LIGHTPROBE")
 
@@ -331,11 +331,11 @@ class VIVY_OT_materials(bpy.types.Operator, VivyMaterialProps):
 							specular=md["passes"]["specular"] if "specular" in md["passes"] else None,
 							normal=md["passes"]["normal"] if "normal" in md["passes"] else None
 						),
-						extensions=None if "extensions" not in md else ViviExtensions(
-							emissive=md["extensions"]["emissive"] if "emissive" in md["extensions"] else None,
-							reflective=md["extensions"]["reflective"] if "reflecive" in md["extensions"] else None,
-							metallic=md["extensions"]["metallic"] if "metallic" in md["extensions"] else None,
-							glass=md["extensions"]["glass"] if "glass" in md["extensions"] else None
+						refinements=None if "extensions" not in md else ViviExtensions(
+							emissive=md["refinements"]["emissive"] if "emissive" in md["extensions"] else None,
+							reflective=md["refinements"]["reflective"] if "reflecive" in md["extensions"] else None,
+							metallic=md["refinements"]["metallic"] if "metallic" in md["extensions"] else None,
+							glass=md["refinements"]["glass"] if "glass" in md["extensions"] else None
 						)
 					),
 					passes=passes

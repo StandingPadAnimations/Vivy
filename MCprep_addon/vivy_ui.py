@@ -42,14 +42,14 @@ class VivyNodeToolProps(bpy.types.PropertyGroup):
                                           ("normal", "Normal", "Normal maps"),
                                           ("specular", "Specular", "Specular maps")])
 
-    # Extensions
-    extension_type: bpy.props.EnumProperty(name="Extension Type",
+    # refinements
+    refinement_type: bpy.props.EnumProperty(name="Refinement Type",
                                            items=[("emit",     "Emissive",     "Emissive Material"),
                                                 ("reflective", "Glossy",       "Glossy Material"),
                                                 ("metallic",   "Metal",        "Metallic Material"),
                                                 ("glass",      "Transmissive", "Glass Material")]
                                            )
-    extension_of: bpy.props.EnumProperty(name="Extension Of",
+    refinement_of: bpy.props.EnumProperty(name="Refinement of",
                                          items=query_materials)
 
 
@@ -205,7 +205,7 @@ class VIVY_OT_set_pass(bpy.types.Operator):
                 amats = mapping[active_material]
                 if isinstance(amats, list):
                     for m in amats:
-                        if "extension" in m:
+                        if "refinement" in m:
                             continue
                         mats[m["material"]]["passes"][vprop.selected_pass] = vprop.specular_name if vprop.selected_pass == "specular" else vprop.normal_name
                 else:
@@ -270,7 +270,7 @@ class VIVY_PT_node_tools(bpy.types.Panel):
                 row.label(text="Select the image node that'll hold the diffuse pass")
 
         # If the material is known, then give access
-        # to more advanced features, like extensions 
+        # to more advanced features, like refinements 
         # and whatnot
         elif "mapping" in data and active_material in data["mapping"]:
             if anode is not None and anode.type == "TEX_IMAGE":
@@ -282,9 +282,9 @@ class VIVY_PT_node_tools(bpy.types.Panel):
                 row = layout.row()
                 row.operator("vivy_node_tools.set_pass")
                 row = layout.row()
-            row.prop(vprop, "extension_type")
+            row.prop(vprop, "refinement_type")
             row = layout.row()
-            row.prop(vprop, "extension_of")
+            row.prop(vprop, "refinement_of")
 
 
 classes = [
