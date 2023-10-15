@@ -52,7 +52,6 @@ class VivyNodeToolProps(bpy.types.PropertyGroup):
     refinement_of: bpy.props.EnumProperty(name="Refinement of",
                                          items=query_materials)
 
-
 class VIVY_OT_register_material(bpy.types.Operator):
     bl_idname = "vivy_node_tools.register_material"
     bl_label = "Register Material"
@@ -64,7 +63,7 @@ class VIVY_OT_register_material(bpy.types.Operator):
         if context.active_object.active_material.name.strip() == "":
             self.report({'ERROR'}, "Name is required")
             return {'CANCELLED'}
-        
+
         # We do seperate open calls because
         # Python is absolutely annoying with doing
         # it all in one block. In theory, a race 
@@ -220,6 +219,76 @@ class VIVY_OT_set_pass(bpy.types.Operator):
         env.reload_vivy_json() # Reload once afterwards too
         return {'FINISHED'}
 
+class VIVY_OT_set_refinement(bpy.types.Operator):
+    bl_idname = "vivy_node_tools.set_refinement"
+    bl_label = "Set Material as Refinement"
+
+    def execute(self, context):
+        vprop = context.scene.vivy_node_tools
+        
+        # We do seperate open calls because
+        # Python is absolutely annoying with doing
+        # it all in one block. In theory, a race 
+        # condition exists in this code as the file
+        # referred to in `json_path` may have changed
+        # between calls, but let's hope it doesn't 
+        # manifest itself
+        #
+        # TODO: Figure out how to do this all in one block
+        json_path = vivy_materials.get_vivy_json()
+        env.reload_vivy_json() # To make sure we get the latest data
+        data = env.vivy_material_json
+        
+        if data is None:
+            self.report({'ERROR'}, "No data, report a bug on Vivy's GitHub repo!")
+            return {'CANCELLED'}
+        
+        # Due to how open() behaves, all errors 
+        # will dump back the JSON data so that 
+        # it's not gone after an error
+        with open(json_path, 'w') as f:
+            active_material = context.active_object.active_material.name
+
+            # Blender does allow pinning of a material's nodetree,
+            # which in theory would make this None
+            if active_material is None:
+                self.report({'ERROR'}, "No active material selected! Maybe there's no active object?")
+                json.dump(data, f)
+                return {'CANCELLED'}
+
+            # Set the mapping to use for the UI
+            if "mapping" not in data:
+                self.report({'ERROR'}, "Materials must be registered first!")
+                json.dump(data, f)
+                return {'CANCELLED'}
+            
+            # Set the material data
+            if "materials" not in data:
+                self.report({'ERROR'}, "Materials must be registered first!")
+                json.dump(data, f)
+                return {'CANCELLED'}
+
+            mapping = data["mapping"]
+            mats = data["materials"]
+
+            if vprop.refinement_of not in mats:
+                self.report({'ERROR'}, "Attempted to add a refinement to material that isn't registered!")
+                json.dump(data, f)
+                return {'CANCELLED'}
+
+            if active_material not in mapping:
+                self.report({'ERROR'}, "Active material not used in Vivy library!")
+                json.dump(data, f)
+                return {'CANCELLED'}
+            
+            if "refinements" not in mats[vprop.refinement_of]:
+                mats[vprop.refinement_of]["refinements"] = {}
+            mats[vprop.refinement_of]["refinements"][vprop.refinement_type] = active_material
+            mapping[active_material].append({
+                                            "material" : vprop.refinement_of,
+                                            "refinement" : vprop.refinement_type
+                                    })
+            return {'FINISHED'}
 
 class VIVY_PT_node_tools(bpy.types.Panel):
     bl_label = "Vivy Tools"
@@ -284,21 +353,32 @@ class VIVY_PT_node_tools(bpy.types.Panel):
             lib_mats = data["mapping"][active_material]
             if isinstance(lib_mats, list):
                 for mat in lib_mats:
-                    if "refinement" in mat:
-                        continue
-                    md = data["materials"][mat["material"]]
                     box = layout.box()
                     box.label(text=mat["material"])
                     brow = box.row()
-                    brow.label(text="Supports Passes For:")
-                    brow = box.row()
-                    brow.label(text="Diffuse", icon="MATERIAL")
-                    if "specular" in md["passes"]:
+                    if "refinement" in mat:
+                        brow.label(text=f"Refinement of: {mat['material']}")
                         brow = box.row()
-                        brow.label(text="Specular", icon="NODE_MATERIAL")
-                    if "normal" in md["passes"]:
+                        refinement = mat["refinement"]
+                        if refinement == "emissive":
+                            brow.label(text="Emission", icon="OUTLINER_OB_LIGHT")
+                        if refinement == "reflective":
+                            brow.label(text="Glossy", icon="NODE_MATERIAL")
+                        if refinement == "metallic":
+                            brow.label(text="Metalic", icon="NODE_MATERIAL")
+                        if refinement == "glass":
+                            brow.label(text="Transmissive", icon="OUTLINER_OB_LIGHTPROBE")
+                    else:
+                        md = data["materials"][mat["material"]]
+                        brow.label(text="Supports Passes For:")
                         brow = box.row()
-                        brow.label(text="Normal", icon="ORIENTATION_NORMAL")
+                        brow.label(text="Diffuse", icon="MATERIAL")
+                        if "specular" in md["passes"]:
+                            brow = box.row()
+                            brow.label(text="Specular", icon="NODE_MATERIAL")
+                        if "normal" in md["passes"]:
+                            brow = box.row()
+                            brow.label(text="Normal", icon="ORIENTATION_NORMAL")
             
             row = layout.row()
             if anode is not None and anode.type == "TEX_IMAGE":
@@ -330,13 +410,16 @@ class VIVY_PT_node_tools(bpy.types.Panel):
             row.label(text="Refinement of:")
             row = layout.row()
             row.prop(vprop, "refinement_of", text="")
+            row = layout.row()
+            row.operator("vivy_node_tools.set_refinement")
 
 
 classes = [
     VivyNodeToolProps,
     VIVY_PT_node_tools,
     VIVY_OT_register_material,
-    VIVY_OT_set_pass
+    VIVY_OT_set_pass,
+    VIVY_OT_set_refinement
 ]
 
 def register():
