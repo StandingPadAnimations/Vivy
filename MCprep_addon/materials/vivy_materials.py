@@ -571,8 +571,12 @@ class VIVY_OT_material_export(bpy.types.Operator, VivyMaterialProps):
 		zip_file_name = f"vivy_export-{date.today()}" + '.zip'
 		zip_file_path = Path(self.directory) / Path(zip_file_name)
 		with zipfile.ZipFile(zip_file_path, mode='w') as zf:
-			zf.write(get_vivy_blend(), arcname="vivy_materials.blend")
-			zf.write(get_vivy_json(), arcname="vivy_materials.json")
+			blend_path, json_path = (get_vivy_blend(), get_vivy_json())
+			if not blend_path.exists() or not json_path.exists():
+				self.report({'ERROR'}, "Missing library files to export!")
+				return {'CANCELLED'}
+			zf.write(blend_path, arcname=blend_path.name)
+			zf.write(json_path, arcname=json_path.name)
 		return {'FINISHED'}
 
 class VIVY_OT_material_import(bpy.types.Operator, ImportHelper):
@@ -588,8 +592,16 @@ class VIVY_OT_material_import(bpy.types.Operator, ImportHelper):
 		import zipfile
 		path = Path(self.filepath)
 		with zipfile.ZipFile(path, mode="r") as zf:
+			files = zf.namelist()
+			if "vivy_materials.blend" not in files or "vivy_materials.json" not in files:
+				self.report({'ERROR'}, "Zip archive is missing files!")
+				return {'CANCELLED'}
 			zf.extract("vivy_materials.blend", path=get_vivy_blend().parent)
 			zf.extract("vivy_materials.json", path=get_vivy_json().parent)
+
+		# Reload the JSON to get
+		# updated information
+		env.reload_vivy_json()
 		return {'FINISHED'}
 
 classes = [
