@@ -10,11 +10,11 @@ class VivyNodeToolProps(bpy.types.PropertyGroup):
     # point to reduce IO
     def query_materials(self, context):
         itms = []
+        active_material = context.active_object.active_material.name
         if env.vivy_material_json is not None:
             if "materials" in env.vivy_material_json:
-                for mat in env.vivy_material_json["materials"]:
-                    itms.append((mat, mat, ""))
-
+                mats = env.vivy_material_json["materials"]
+                itms = [(mat, mat, "") for mat in mats if mat != active_material]
         return itms
 
     # Material name and description
@@ -221,7 +221,6 @@ class VIVY_OT_set_pass(bpy.types.Operator):
         return {'FINISHED'}
 
 
-
 class VIVY_PT_node_tools(bpy.types.Panel):
     bl_label = "Vivy Tools"
     bl_idname = "VIVY_PT_node_tools"
@@ -255,11 +254,17 @@ class VIVY_PT_node_tools(bpy.types.Panel):
         # menu
         if "mapping" not in data or active_material not in data["mapping"]:
             if anode is not None and anode.type == "TEX_IMAGE":
-                row.prop(vprop, "material_name")
+                row.label(text="Material Name:")
                 row = layout.row()
-                row.prop(vprop, "desc")
+                row.prop(vprop, "material_name", text="")
                 row = layout.row()
-                row.prop(vprop, "diffuse_name")
+                row.label(text="Material Description:")
+                row = layout.row()
+                row.prop(vprop, "desc", text="")
+                row = layout.row()
+                row.label(text="Name of Diffuse Node:")
+                row = layout.row()
+                row.prop(vprop, "diffuse_name", text="")
                 row = layout.row()
 
                 # Grey out button if no name is inputed 
@@ -273,18 +278,58 @@ class VIVY_PT_node_tools(bpy.types.Panel):
         # to more advanced features, like refinements 
         # and whatnot
         elif "mapping" in data and active_material in data["mapping"]:
+            # This will give some information 
+            # on the material being worked on
+            # at the moment
+            lib_mats = data["mapping"][active_material]
+            if isinstance(lib_mats, list):
+                for mat in lib_mats:
+                    if "refinement" in mat:
+                        continue
+                    md = data["materials"][mat["material"]]
+                    box = layout.box()
+                    box.label(text=mat["material"])
+                    brow = box.row()
+                    brow.label(text="Supports Passes For:")
+                    brow = box.row()
+                    brow.label(text="Diffuse", icon="MATERIAL")
+                    if "specular" in md["passes"]:
+                        brow = box.row()
+                        brow.label(text="Specular", icon="NODE_MATERIAL")
+                    if "normal" in md["passes"]:
+                        brow = box.row()
+                        brow.label(text="Normal", icon="ORIENTATION_NORMAL")
+            
+            row = layout.row()
             if anode is not None and anode.type == "TEX_IMAGE":
-                row.prop(vprop, "specular_name")
+                row.label(text="Set Pass For:")
                 row = layout.row()
-                row.prop(vprop, "normal_name")
+                row.prop(vprop, "selected_pass", text="")
                 row = layout.row()
-                row.prop(vprop, "selected_pass")
+
+                # To make the UI easier to understand,
+                # we change the property shown based
+                # on the selected pass
+                if vprop.selected_pass == "specular":
+                    row.label(text="Name of Specular Node:")
+                    row = layout.row()
+                    row.prop(vprop, "specular_name", text="")
+                elif vprop.selected_pass == "normal":
+                    row.label(text="Name of Normal Node:")
+                    row = layout.row()
+                    row.prop(vprop, "normal_name", text="")
                 row = layout.row()
                 row.operator("vivy_node_tools.set_pass")
                 row = layout.row()
-            row.prop(vprop, "refinement_type")
+
+            # Refinements section
+            row.label(text="Refinement type:")
             row = layout.row()
-            row.prop(vprop, "refinement_of")
+            row.prop(vprop, "refinement_type", text="")
+            row = layout.row()
+            row.label(text="Refinement of:")
+            row = layout.row()
+            row.prop(vprop, "refinement_of", text="")
 
 
 classes = [
