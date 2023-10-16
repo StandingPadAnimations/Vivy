@@ -191,7 +191,7 @@ class VIVY_OT_set_pass(bpy.types.Operator):
         mats = data["materials"]
         if active_material not in mapping:
             self.report({'ERROR'}, "Active material not used in Vivy library!")
-            return
+            return {'CANCELLED'}
         else:
             amats = mapping[active_material]
             if isinstance(amats, list):
