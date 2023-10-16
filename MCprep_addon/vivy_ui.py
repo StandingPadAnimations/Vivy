@@ -85,52 +85,48 @@ class VIVY_OT_register_material(bpy.types.Operator):
             self.report({'ERROR'}, "Name already registered!")
             return {'CANCELLED'}
         
-        # Due to how open() behaves, all errors 
-        # will dump back the JSON data so that 
-        # it's not gone after an error
-        with open(json_path, 'w') as f:
-            active_material = context.active_object.active_material.name
+        active_material = context.active_object.active_material.name
 
-            # Blender does allow pinning of a material's nodetree,
-            # which in theory would make this None
-            if active_material is None:
-                self.report({'ERROR'}, "No active material selected! Maybe there's no active object?")
-                json.dump(data, f)
-                return {'CANCELLED'}
-            
-            # Set the material data
-            if "materials" not in data:
-                data["materials"] = {}
-            mats = data["materials"]
-            mats[vprop.material_name] = {
-                "base_material" : active_material,
-                "desc" : vprop.desc,
-                "passes" : {
-                    "diffuse" : vprop.diffuse_name
-                }
+        # Blender does allow pinning of a material's nodetree,
+        # which in theory would make this None
+        if active_material is None:
+            self.report({'ERROR'}, "No active material selected! Maybe there's no active object?")
+            return {'CANCELLED'}
+        
+        # Set the material data
+        if "materials" not in data:
+            data["materials"] = {}
+        mats = data["materials"]
+        mats[vprop.material_name] = {
+            "base_material" : active_material,
+            "desc" : vprop.desc,
+            "passes" : {
+                "diffuse" : vprop.diffuse_name
             }
-            
-            # Set the mapping to use for the UI
-            if "mapping" not in data:
-                data["mapping"] = {}
-            mapping = data["mapping"]
-            
-            if active_material not in mapping:
-                mapping[active_material] = [{
-                                        "material" : vprop.material_name
-                                    }]
+        }
+        
+        # Set the mapping to use for the UI
+        if "mapping" not in data:
+            data["mapping"] = {}
+        mapping = data["mapping"]
+        
+        if active_material not in mapping:
+            mapping[active_material] = [{
+                                    "material" : vprop.material_name
+                                }]
+        else:
+            # Check if it's actually a list. If it is, append
+            # to the list. Otherwise, return an error and exit 
+            # gracefully
+            if isinstance(mapping[active_material], list):
+                mapping[active_material].append({
+                                                "material" : vprop.material_name
+                                            })
             else:
-                # Check if it's actually a list. If it is, append
-                # to the list. Otherwise, return an error and exit 
-                # gracefully
-                if isinstance(mapping[active_material], list):
-                    mapping[active_material].append({
-                                                    "material" : vprop.material_name
-                                                })
-                else:
-                    self.report({'ERROR'}, "Mapping in Vivy JSON is of the incorrect format!")
-                    json.dump(data, f)
-                    return {'CANCELLED'}
+                self.report({'ERROR'}, "Mapping in Vivy JSON is of the incorrect format!")
+                return {'CANCELLED'}
+
+        with open(json_path, 'w') as f:
             json.dump(data, f)
         
         anode = context.active_node
@@ -173,49 +169,41 @@ class VIVY_OT_set_pass(bpy.types.Operator):
             self.report({'ERROR'}, "No data, report a bug on Vivy's GitHub repo!")
             return {'CANCELLED'}
         
-        # Due to how open() behaves, all errors 
-        # will dump back the JSON data so that 
-        # it's not gone after an error
-        with open(json_path, 'w') as f:
-            active_material = context.active_object.active_material.name
+        active_material = context.active_object.active_material.name
 
-            # Blender does allow pinning of a material's nodetree,
-            # which in theory would make this None
-            if active_material is None:
-                self.report({'ERROR'}, "No active material selected! Maybe there's no active object?")
-                json.dump(data, f)
-                return {'CANCELLED'}
+        # Blender does allow pinning of a material's nodetree,
+        # which in theory would make this None
+        if active_material is None:
+            self.report({'ERROR'}, "No active material selected! Maybe there's no active object?")
+            return {'CANCELLED'}
 
-            # Set the mapping to use for the UI
-            if "mapping" not in data:
-                self.report({'ERROR'}, "Materials must be registered first!")
-                json.dump(data, f)
-                return {'CANCELLED'}
-            
-            # Set the material data
-            if "materials" not in data:
-                self.report({'ERROR'}, "Materials must be registered first!")
-                json.dump(data, f)
-                return {'CANCELLED'}
+        # Set the mapping to use for the UI
+        if "mapping" not in data:
+            self.report({'ERROR'}, "Materials must be registered first!")
+            return {'CANCELLED'}
+        
+        # Set the material data
+        if "materials" not in data:
+            self.report({'ERROR'}, "Materials must be registered first!")
+            return {'CANCELLED'}
 
-            mapping = data["mapping"]
-            mats = data["materials"]
-            if active_material not in mapping:
-                self.report({'ERROR'}, "Active material not used in Vivy library!")
-                json.dump(data, f)
-                return
+        mapping = data["mapping"]
+        mats = data["materials"]
+        if active_material not in mapping:
+            self.report({'ERROR'}, "Active material not used in Vivy library!")
+            return
+        else:
+            amats = mapping[active_material]
+            if isinstance(amats, list):
+                for m in amats:
+                    if "refinement" in m:
+                        continue
+                    mats[m["material"]]["passes"][vprop.selected_pass] = vprop.specular_name if vprop.selected_pass == "specular" else vprop.normal_name
             else:
-                amats = mapping[active_material]
-                if isinstance(amats, list):
-                    for m in amats:
-                        if "refinement" in m:
-                            continue
-                        mats[m["material"]]["passes"][vprop.selected_pass] = vprop.specular_name if vprop.selected_pass == "specular" else vprop.normal_name
-                else:
-                    self.report({'ERROR'}, "Mapping in Vivy JSON is of the incorrect format!")
-                    json.dump(data, f)
-                    return {'CANCELLED'}
-
+                self.report({'ERROR'}, "Mapping in Vivy JSON is of the incorrect format!")
+                return {'CANCELLED'}
+        
+        with open(json_path, 'w') as f:
             json.dump(data, f)
         
         anode = context.active_node
@@ -247,52 +235,47 @@ class VIVY_OT_set_refinement(bpy.types.Operator):
             self.report({'ERROR'}, "No data, report a bug on Vivy's GitHub repo!")
             return {'CANCELLED'}
         
-        # Due to how open() behaves, all errors 
-        # will dump back the JSON data so that 
-        # it's not gone after an error
+        active_material = context.active_object.active_material.name
+
+        # Blender does allow pinning of a material's nodetree,
+        # which in theory would make this None
+        if active_material is None:
+            self.report({'ERROR'}, "No active material selected! Maybe there's no active object?")
+            return {'CANCELLED'}
+
+        # Set the mapping to use for the UI
+        if "mapping" not in data:
+            self.report({'ERROR'}, "Materials must be registered first!")
+            return {'CANCELLED'}
+        
+        # Set the material data
+        if "materials" not in data:
+            self.report({'ERROR'}, "Materials must be registered first!")
+            return {'CANCELLED'}
+
+        mapping = data["mapping"]
+        mats = data["materials"]
+
+        if vprop.refinement_of not in mats:
+            self.report({'ERROR'}, "Attempted to add a refinement to material that isn't registered!")
+            return {'CANCELLED'}
+
+        if active_material not in mapping:
+            self.report({'ERROR'}, "Active material not used in Vivy library!")
+            return {'CANCELLED'}
+        
+        if "refinements" not in mats[vprop.refinement_of]:
+            mats[vprop.refinement_of]["refinements"] = {}
+        mats[vprop.refinement_of]["refinements"][vprop.refinement_type] = active_material
+        mapping[active_material].append({
+                                        "material" : vprop.refinement_of,
+                                        "refinement" : vprop.refinement_type
+                                })
+
         with open(json_path, 'w') as f:
-            active_material = context.active_object.active_material.name
-
-            # Blender does allow pinning of a material's nodetree,
-            # which in theory would make this None
-            if active_material is None:
-                self.report({'ERROR'}, "No active material selected! Maybe there's no active object?")
-                json.dump(data, f)
-                return {'CANCELLED'}
-
-            # Set the mapping to use for the UI
-            if "mapping" not in data:
-                self.report({'ERROR'}, "Materials must be registered first!")
-                json.dump(data, f)
-                return {'CANCELLED'}
-            
-            # Set the material data
-            if "materials" not in data:
-                self.report({'ERROR'}, "Materials must be registered first!")
-                json.dump(data, f)
-                return {'CANCELLED'}
-
-            mapping = data["mapping"]
-            mats = data["materials"]
-
-            if vprop.refinement_of not in mats:
-                self.report({'ERROR'}, "Attempted to add a refinement to material that isn't registered!")
-                json.dump(data, f)
-                return {'CANCELLED'}
-
-            if active_material not in mapping:
-                self.report({'ERROR'}, "Active material not used in Vivy library!")
-                json.dump(data, f)
-                return {'CANCELLED'}
-            
-            if "refinements" not in mats[vprop.refinement_of]:
-                mats[vprop.refinement_of]["refinements"] = {}
-            mats[vprop.refinement_of]["refinements"][vprop.refinement_type] = active_material
-            mapping[active_material].append({
-                                            "material" : vprop.refinement_of,
-                                            "refinement" : vprop.refinement_type
-                                    })
-            return {'FINISHED'}
+            json.dump(data, f)
+        
+        return {'FINISHED'}
 
 class VIVY_PT_node_tools(bpy.types.Panel):
     bl_label = "Vivy Tools"
