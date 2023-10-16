@@ -92,6 +92,15 @@ class VIVY_OT_register_material(bpy.types.Operator):
         if active_material is None:
             self.report({'ERROR'}, "No active material selected! Maybe there's no active object?")
             return {'CANCELLED'}
+
+        anode = context.active_node
+        if anode is None:
+            self.report({'ERROR'}, "No node selected!")
+            return {'CANCELLED'}
+        elif anode.type != "TEX_IMAGE":
+            self.report({'ERROR'}, "Selected node is not an Image texture node!")
+            return {'CANCELLED'}
+        anode.name = vprop.diffuse_name
         
         # Set the material data
         if "materials" not in data:
@@ -129,8 +138,6 @@ class VIVY_OT_register_material(bpy.types.Operator):
         with open(json_path, 'w') as f:
             json.dump(data, f)
         
-        anode = context.active_node
-        anode.name = vprop.diffuse_name
         env.reload_vivy_json() # Reload once afterwards too
         return {'FINISHED'}
 
@@ -195,6 +202,14 @@ class VIVY_OT_set_pass(bpy.types.Operator):
         else:
             amats = mapping[active_material]
             if isinstance(amats, list):
+                anode = context.active_node
+                if anode is None:
+                    self.report({'ERROR'}, "No node selected!")
+                    return {'CANCELLED'}
+                elif anode.type != "TEX_IMAGE":
+                    self.report({'ERROR'}, "Selected node is not an Image texture node!")
+                    return {'CANCELLED'}
+                anode.name = vprop.specular_name if vprop.selected_pass == "specular" else vprop.normal_name
                 for m in amats:
                     if "refinement" in m:
                         continue
@@ -206,8 +221,6 @@ class VIVY_OT_set_pass(bpy.types.Operator):
         with open(json_path, 'w') as f:
             json.dump(data, f)
         
-        anode = context.active_node
-        anode.name = vprop.specular_name if vprop.selected_pass == "specular" else vprop.normal_name
         env.reload_vivy_json() # Reload once afterwards too
         return {'FINISHED'}
 
