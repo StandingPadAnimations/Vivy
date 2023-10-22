@@ -81,7 +81,7 @@ class VIVY_OT_register_material(bpy.types.Operator):
             self.report({'ERROR'}, "No data, report a bug on Vivy's GitHub repo!")
             return {'CANCELLED'}
 
-        if vprop.material_name in data["materials"]:
+        if "materials" in data and vprop.material_name in data["materials"]:
             self.report({'ERROR'}, "Name already registered!")
             return {'CANCELLED'}
         
@@ -307,7 +307,8 @@ class VIVY_PT_node_tools(bpy.types.Panel):
         row = layout.row()
         anode = context.active_node
         vprop = context.scene.vivy_node_tools
-        active_material = context.active_object.active_material.name
+        active_material = context.active_object.active_material.name \
+            if context.active_object.active_material.name is not None else None
 
         # We are assuming the data is up to date 
         # based on how the addon works and is supposed
