@@ -327,12 +327,12 @@ class VIVY_OT_materials(bpy.types.Operator, VivyMaterialProps):
 					material=VivyMaterial(
 						base_material=md["base_material"],
 						desc=md["desc"],
-						passes=ViviPasses(
+						passes=VivyPasses(
 							diffuse=md["passes"]["diffuse"],
 							specular=md["passes"]["specular"] if "specular" in md["passes"] else None,
 							normal=md["passes"]["normal"] if "normal" in md["passes"] else None
 						),
-						refinements=None if "extensions" not in md else ViviExtensions(
+						refinements=None if "extensions" not in md else VivyRefinements(
 							emissive=md["refinements"]["emissive"] if "emissive" in md["extensions"] else None,
 							reflective=md["refinements"]["reflective"] if "reflecive" in md["extensions"] else None,
 							metallic=md["refinements"]["metallic"] if "metallic" in md["extensions"] else None,
