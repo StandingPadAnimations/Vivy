@@ -440,7 +440,20 @@ class VIVY_PT_node_tools_refinement(bpy.types.Panel):
     
     @classmethod
     def poll(cls, context):
-        return context.area.ui_type == "ShaderNodeTree" and str(vivy_materials.get_vivy_blend().absolute()) == bpy.data.filepath
+        if not (context.area.ui_type == "ShaderNodeTree" and str(vivy_materials.get_vivy_blend().absolute()) == bpy.data.filepath):
+            return False
+
+        active_material = context.active_object.active_material.name \
+            if context.active_object.active_material.name is not None else None
+        data = env.vivy_material_json
+        if "mapping" in data:
+            if active_material in data["mapping"]:
+                for m in data["mapping"][active_material]:
+                    if "refinement" in m:
+                        return False
+            else:
+                return False
+        return True
 
     def draw(self, context):
         layout = self.layout
