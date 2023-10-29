@@ -536,6 +536,7 @@ class VIVY_OT_swap_texture_pack(
 				n.image = new_img
 				util.apply_colorspace(n, 'Non-Color')
 		changed = True
+		nodes.active = nodes.get(diffuse)
 		return changed
 
 class VIVY_OT_material_export(bpy.types.Operator, VivyMaterialProps):
