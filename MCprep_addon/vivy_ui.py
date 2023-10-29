@@ -14,16 +14,20 @@ class VivyNodeToolProps(bpy.types.PropertyGroup):
         if env.vivy_material_json is not None:
             if "materials" in env.vivy_material_json:
                 mats = env.vivy_material_json["materials"]
-                itms = [(mat, mat, "") for mat in mats if mat["base_material"] != active_material]
+                itms = [(mat, mat, "") for mat in mats if mats[mat]["base_material"] != active_material]
         return itms
 
-    # Material name and description
+    # Material name, description, and type
     material_name: bpy.props.StringProperty(name="Material Name", 
                                             maxlen=50,
                                             default="")
     desc: bpy.props.StringProperty(name="Description", 
                                         maxlen=75,
                                         default="")
+    as_what: bpy.props.EnumProperty(name="As What?",
+                                           items=[
+                                            ("regular", "As Material", ""),
+                                            ("refine", "As Refinement", "")])
 
     # Names for pass nodes
     diffuse_name: bpy.props.StringProperty(name="Diffuse Node Name", 
@@ -44,7 +48,7 @@ class VivyNodeToolProps(bpy.types.PropertyGroup):
 
     # refinements
     refinement_type: bpy.props.EnumProperty(name="Refinement Type",
-                                           items=[("emit",     "Emissive",     "Emissive Material"),
+                                           items=[("emissive",     "Emissive",     "Emissive Material"),
                                                 ("reflective", "Glossy",       "Glossy Material"),
                                                 ("metallic",   "Metal",        "Metallic Material"),
                                                 ("glass",      "Transmissive", "Glass Material")]
@@ -274,8 +278,7 @@ class VIVY_OT_set_refinement(bpy.types.Operator):
             return {'CANCELLED'}
 
         if active_material not in mapping:
-            self.report({'ERROR'}, "Active material not used in Vivy library!")
-            return {'CANCELLED'}
+            mapping[active_material] = []
         
         if "refinements" not in mats[vprop.refinement_of]:
             mats[vprop.refinement_of]["refinements"] = {}
@@ -301,6 +304,20 @@ class VIVY_PT_node_tools(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         return context.area.ui_type == "ShaderNodeTree" and str(vivy_materials.get_vivy_blend().absolute()) == bpy.data.filepath
+    
+    # Refinements section
+    def draw_refinements(self, context, row):
+        layout = self.layout
+        vprop = context.scene.vivy_node_tools
+        row.label(text="Refinement type:")
+        row = layout.row()
+        row.prop(vprop, "refinement_type", text="")
+        row = layout.row()
+        row.label(text="Refinement of:")
+        row = layout.row()
+        row.prop(vprop, "refinement_of", text="")
+        row = layout.row()
+        row.operator("vivy_node_tools.set_refinement")
 
     def draw(self, context): 
         layout = self.layout
@@ -336,11 +353,19 @@ class VIVY_PT_node_tools(bpy.types.Panel):
                 row = layout.row()
                 row.prop(vprop, "diffuse_name", text="")
                 row = layout.row()
+                row.label(text="Set Type:")
+                row = layout.row()
+                row.prop(vprop, "as_what", text="")
+                row = layout.row()
 
                 # Grey out button if no name is inputed 
                 # or if it's all spaces
                 row.enabled = vprop.material_name.strip() != ""
-                row.operator("vivy_node_tools.register_material")
+
+                if vprop.as_what == "refine":
+                    self.draw_refinements(context, row)
+                elif vprop.as_what == "regular":
+                    row.operator("vivy_node_tools.register_material")
             else:
                 row.label(text="Select the image node that'll hold the diffuse pass")
 
@@ -403,21 +428,39 @@ class VIVY_PT_node_tools(bpy.types.Panel):
                 row.operator("vivy_node_tools.set_pass")
                 row = layout.row()
 
-            # Refinements section
-            row.label(text="Refinement type:")
-            row = layout.row()
-            row.prop(vprop, "refinement_type", text="")
-            row = layout.row()
-            row.label(text="Refinement of:")
-            row = layout.row()
-            row.prop(vprop, "refinement_of", text="")
-            row = layout.row()
-            row.operator("vivy_node_tools.set_refinement")
+class VIVY_PT_node_tools_refinement(bpy.types.Panel):
+    bl_label = "Refinements"
+    bl_idname = "VIVY_PT_node_tools_refinement"
+    bl_space_type = 'NODE_EDITOR'
+    bl_region_type = 'UI'
+    bl_category = "Vivy"
+    bl_context = "scene" 
+    bl_parent_id = "VIVY_PT_node_tools"
+    bl_options = {"DEFAULT_CLOSED"}
+    
+    @classmethod
+    def poll(cls, context):
+        return context.area.ui_type == "ShaderNodeTree" and str(vivy_materials.get_vivy_blend().absolute()) == bpy.data.filepath
 
+    def draw(self, context):
+        layout = self.layout
+        row = layout.row()
+        layout = self.layout
+        vprop = context.scene.vivy_node_tools
+        row.label(text="Refinement type:")
+        row = layout.row()
+        row.prop(vprop, "refinement_type", text="")
+        row = layout.row()
+        row.label(text="Refinement of:")
+        row = layout.row()
+        row.prop(vprop, "refinement_of", text="")
+        row = layout.row()
+        row.operator("vivy_node_tools.set_refinement")
 
 classes = [
     VivyNodeToolProps,
     VIVY_PT_node_tools,
+    VIVY_PT_node_tools_refinement,
     VIVY_OT_register_material,
     VIVY_OT_set_pass,
     VIVY_OT_set_refinement
