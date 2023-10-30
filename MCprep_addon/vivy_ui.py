@@ -48,11 +48,14 @@ class VivyNodeToolProps(bpy.types.PropertyGroup):
 
     # refinements
     refinement_type: bpy.props.EnumProperty(name="Refinement Type",
-                                           items=[("emissive",     "Emissive",     "Emissive Material"),
+                                           items=[("emissive", "Emissive",     "Emissive Material"),
                                                 ("reflective", "Glossy",       "Glossy Material"),
                                                 ("metallic",   "Metal",        "Metallic Material"),
-                                                ("glass",      "Transmissive", "Glass Material")]
-                                           )
+                                                ("glass",      "Transmissive", "Glass Material"),
+                                                ("fallback_s", "Fallback (Missing Specular Map)", "Fallback material if the specular pass is missing"),
+                                                ("fallback_n", "Fallback (Missing Normal Map)", "Fallback material if the normal pass is missing"),
+                                                ("fallback",   "Complete Fallback", "Fallback material if no PBR textures exist")
+                                            ])
     refinement_of: bpy.props.EnumProperty(name="Refinement of",
                                          items=query_materials)
 
@@ -394,6 +397,12 @@ class VIVY_PT_node_tools(bpy.types.Panel):
                             brow.label(text="Metalic", icon="NODE_MATERIAL")
                         if refinement == "glass":
                             brow.label(text="Transmissive", icon="OUTLINER_OB_LIGHTPROBE")
+                        if refinement == "fallback_s":
+                            brow.label(text="Fallback for Missing Specular")
+                        if refinement == "fallback_n":
+                            brow.label(text="Fallback for Missing Normal")
+                        if refinement == "fallback":
+                            brow.label(text="Complete Fallback for No Extra Passes")
                     else:
                         md = data["materials"][mat["material"]]
                         brow.label(text="Supports Passes For:")

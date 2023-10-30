@@ -19,6 +19,7 @@
 import bpy
 from bpy.types import Context, Material
 from bpy_extras.io_utils import ImportHelper
+from enum import Enum
 
 import os
 from dataclasses import dataclass
@@ -33,6 +34,11 @@ from . import generate
 from . import sync
 from .generate import checklist, get_mc_canonical_name
 
+class Fallback(Enum):
+	FALLBACK_S = "fallback_s"
+	FALLBACK_N = "fallback_n"
+	FALLBACK = "fallback"
+
 @dataclass
 class VivyPasses:
 	diffuse: str 
@@ -45,6 +51,9 @@ class VivyRefinements:
 	reflective: Optional[str]
 	metallic: Optional[str]
 	glass: Optional[str]
+	fallback_n: Optional[str]
+	fallback_s: Optional[str]
+	fallback: Optional[str]
 
 @dataclass
 class VivyMaterial:
@@ -58,6 +67,7 @@ class VivyOptions:
 	source_mat: str
 	material: VivyMaterial
 	passes: Dict[str, str]
+	fallback: Optional[Fallback]
 
 def reload_material_vivy_library(context: Context) -> None:
 	"""Reloads the library and cache"""
@@ -105,6 +115,19 @@ def set_material(context: Context, material: Material, options: VivyOptions) -> 
 			if checklist(canon, "glass"):
 				options.material.base_material = ext.glass
 
+		# Fallbacks in case texture swap with PBR fails
+		if options.fallback is not None:
+			if options.fallback == Fallback.FALLBACK_S and ext.fallback_s is not None:
+				options.material.base_material = ext.fallback_s
+				options.material.passes.specular = None
+			elif options.fallback == Fallback.FALLBACK_N and ext.fallback_n is not None:
+				options.material.base_material = ext.fallback_n
+				options.material.passes.normal = None
+			elif options.fallback == Fallback.FALLBACK and ext.fallback is not None:
+				options.material.base_material = ext.fallback
+				options.material.passes.specular = None
+				options.material.passes.normal = None
+
 	import_name: Optional[str] = None
 	if options.material.base_material in env.vivy_cache:
 		import_name = options.material.base_material
@@ -142,7 +165,7 @@ def set_material(context: Context, material: Material, options: VivyOptions) -> 
 			nnodes = selected_material.node_tree.nodes
 			material_nodes = material.node_tree.nodes
 
-			if not material_nodes.get("Image Texture"):
+			if not material_nodes.get(options.material.passes.diffuse):
 				return "Material has no Image Texture node"
 
 			nnode_diffuse = nnodes.get(p[0])
@@ -243,6 +266,15 @@ def draw_mats_common(self, context: Context) -> None:
 		if "glass" in md["refinements"]:
 			row = box.row()
 			row.label(text="Transmissive", icon="OUTLINER_OB_LIGHTPROBE")
+		if "fallback_s" in md["refinements"]:
+			row = box.row()
+			row.label(text="Fallback for Missing Specular")
+		if "fallback_n" in md["refinements"]:
+			row = box.row()
+			row.label(text="Fallback for Missing Normal")
+		if "fallback" in md["refinements"]:
+			row = box.row()
+			row.label(text="Complete Fallback for No Extra Passes")
 
 class VIVY_OT_materials(bpy.types.Operator, VivyMaterialProps):
 	"""
@@ -332,14 +364,18 @@ class VIVY_OT_materials(bpy.types.Operator, VivyMaterialProps):
 							specular=md["passes"]["specular"] if "specular" in md["passes"] else None,
 							normal=md["passes"]["normal"] if "normal" in md["passes"] else None
 						),
-						refinements=None if "extensions" not in md else VivyRefinements(
-							emissive=md["refinements"]["emissive"] if "emissive" in md["extensions"] else None,
-							reflective=md["refinements"]["reflective"] if "reflecive" in md["extensions"] else None,
-							metallic=md["refinements"]["metallic"] if "metallic" in md["extensions"] else None,
-							glass=md["refinements"]["glass"] if "glass" in md["extensions"] else None
+						refinements=None if "refinements" not in md else VivyRefinements(
+							emissive=md["refinements"]["emissive"] if "emissive" in md["refinements"] else None,
+							reflective=md["refinements"]["reflective"] if "reflecive" in md["refinements"] else None,
+							metallic=md["refinements"]["metallic"] if "metallic" in md["refinements"] else None,
+							glass=md["refinements"]["glass"] if "glass" in md["refinements"] else None,
+							fallback_s=md["refinements"]["fallback_s"] if "fallback_s" in md["refinements"] else None,
+							fallback_n=md["refinements"]["fallback_n"] if "fallback_n" in md["refinements"] else None,
+							fallback=md["refinements"]["fallback"] if "fallback" in md["refinements"] else None
 						)
 					),
-					passes=passes
+					passes=passes,
+					fallback=None
 				)
 				generate_vivy_materials(self, context, options)
 				count += 1
@@ -467,7 +503,7 @@ class VIVY_OT_swap_texture_pack(
 		res = 0
 		for mat in mat_list:
 			self.preprocess_material(mat)
-			res += self.set_texture_pack(mat, folder, mtype)
+			res += self.set_texture_pack(context, mat, folder, mtype)
 			self.report({'INFO'}, f"{res} materials affected")
 		self.track_param = context.scene.render.engine
 		return {'FINISHED'}
@@ -481,7 +517,7 @@ class VIVY_OT_swap_texture_pack(
 			material.name = "grass_block_side"
 			env.log("Renamed material: grass_block_side_overlay to grass_block_side")
 	
-	def set_texture_pack(self, material: Material, folder: Path, material_type: str) -> bool:
+	def set_texture_pack(self, context, material: Material, folder: Path, material_type: str) -> bool:
 		"""Replace existing material's image with texture pack's.
 
 		Run through and check for each if counterpart material exists, then
@@ -490,13 +526,39 @@ class VIVY_OT_swap_texture_pack(
 		mc_name, _ = get_mc_canonical_name(material.name)
 		image = generate.find_from_texturepack(mc_name, folder)
 		if image is None:
+			obj = bpy.context.view_layer.objects.active
+			md = env.vivy_material_json["materials"][obj["VIVY_MATERIAL_NAME"]]
+			options = VivyOptions(
+				source_mat=material.name,
+				material=VivyMaterial(
+					base_material=md["base_material"],
+					desc=md["desc"],
+					passes=VivyPasses(
+						diffuse=md["passes"]["diffuse"],
+						specular=md["passes"]["specular"] if "specular" in md["passes"] else None,
+						normal=md["passes"]["normal"] if "normal" in md["passes"] else None
+					),
+					refinements=None if "refinements" not in md else VivyRefinements(
+						emissive=md["refinements"]["emissive"] if "emissive" in md["refinements"] else None,
+						reflective=md["refinements"]["reflective"] if "reflecive" in md["refinements"] else None,
+						metallic=md["refinements"]["metallic"] if "metallic" in md["refinements"] else None,
+						glass=md["refinements"]["glass"] if "glass" in md["refinements"] else None,
+						fallback_s=md["refinements"]["fallback_s"] if "fallback_s" in md["refinements"] else None,
+						fallback_n=md["refinements"]["fallback_n"] if "fallback_n" in md["refinements"] else None,
+						fallback=md["refinements"]["fallback"] if "fallback" in md["refinements"] else None
+					)
+				),
+				passes=generate.get_textures(material),
+				fallback=Fallback.FALLBACK
+			)
+			generate_vivy_materials(self, context, options)
 			return False
 
 		image_data = util.loadTexture(image)
-		_ = self.set_cycles_texture(image_data, material, material_type, True)
+		_ = self.set_cycles_texture(context, image_data, material, material_type, True)
 		return True
 
-	def set_cycles_texture(self, image: generate.Image, material: Material, type: str, extra_passes: bool=False) -> bool:
+	def set_cycles_texture(self, context, image: generate.Image, material: Material, type: str, extra_passes: bool=False) -> bool:
 		"""
 		Used by skin swap and assiging missing textures or tex swapping.
 		Args:
@@ -520,21 +582,62 @@ class VIVY_OT_swap_texture_pack(
 		normal = p["normal"] if "normal" in p else None
 
 		nodes = material.node_tree.nodes
+		fallback = None
+		passes = {}
 		if diffuse is not None:
 			d = nodes.get(diffuse)
 			d.image = image
+			passes["diffuse"] = image
 		if specular is not None:
 			s = nodes.get(specular)
 			if "specular" in img_sets:
 				new_img = util.loadTexture(img_sets["specular"])
 				s.image = new_img
 				util.apply_colorspace(s, 'Non-Color')
+				passes["specular"] = new_img
+			else:
+				fallback = Fallback.FALLBACK_S
 		if normal is not None:
 			n = nodes.get(normal)
 			if "normal" in img_sets:
 				new_img = util.loadTexture(img_sets["normal"])
 				n.image = new_img
 				util.apply_colorspace(n, 'Non-Color')
+				passes["normal"] = new_img 
+			else:
+				fallback = Fallback.FALLBACK_N
+		
+		# use fallback material if needed
+		if fallback is not None:
+			obj = bpy.context.view_layer.objects.active
+			md = env.vivy_material_json["materials"][obj["VIVY_MATERIAL_NAME"]]
+			options = VivyOptions(
+				source_mat=material.name,
+				material=VivyMaterial(
+					base_material=md["base_material"],
+					desc=md["desc"],
+					passes=VivyPasses(
+						diffuse=md["passes"]["diffuse"],
+						specular=md["passes"]["specular"] if "specular" in md["passes"] else None,
+						normal=md["passes"]["normal"] if "normal" in md["passes"] else None
+					),
+					refinements=None if "refinements" not in md else VivyRefinements(
+						emissive=md["refinements"]["emissive"] if "emissive" in md["refinements"] else None,
+						reflective=md["refinements"]["reflective"] if "reflecive" in md["refinements"] else None,
+						metallic=md["refinements"]["metallic"] if "metallic" in md["refinements"] else None,
+						glass=md["refinements"]["glass"] if "glass" in md["refinements"] else None,
+						fallback_s=md["refinements"]["fallback_s"] if "fallback_s" in md["refinements"] else None,
+						fallback_n=md["refinements"]["fallback_n"] if "fallback_n" in md["refinements"] else None,
+						fallback=md["refinements"]["fallback"] if "fallback" in md["refinements"] else None
+					)
+				),
+				passes=passes,
+				fallback=fallback
+			)
+			generate_vivy_materials(self, context, options)
+			set_material(context, material, options)
+			
+
 		changed = True
 		nodes.active = nodes.get(diffuse)
 		return changed
