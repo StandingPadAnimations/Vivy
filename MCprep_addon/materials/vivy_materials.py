@@ -165,7 +165,7 @@ def set_material(context: Context, material: Material, options: VivyOptions) -> 
 			nnodes = selected_material.node_tree.nodes
 			material_nodes = material.node_tree.nodes
 
-			if not material_nodes.get(options.material.passes.diffuse):
+			if not material_nodes.get("Image Texture") and not material_nodes.get(options.material.passes.diffuse):
 				return "Material has no Image Texture node"
 
 			nnode_diffuse = nnodes.get(p[0])
@@ -302,15 +302,13 @@ class VIVY_OT_materials(bpy.types.Operator, VivyMaterialProps):
 		# get list of selected objects
 		obj_list = context.selected_objects
 		if not obj_list:
-			if not self.skipUsage:
-				self.report({'ERROR'}, "No objects selected")
+			self.report({'ERROR'}, "No objects selected")
 			return {'CANCELLED'}
 
 		# gets the list of materials (without repetition) from selected
 		mat_list = util.materialsFromObj(obj_list)
 		if not mat_list:
-			if not self.skipUsage:
-				self.report({'ERROR'}, "No materials found on selected objects")
+			self.report({'ERROR'}, "No materials found on selected objects")
 			return {'CANCELLED'}
 
 		# check if linked material exists
