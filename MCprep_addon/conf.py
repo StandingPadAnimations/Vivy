@@ -32,7 +32,7 @@ from bpy.utils.previews import ImagePreviewCollection
 # -----------------------------------------------------------------------------
 
 # Upper supported Blender version
-UPPER_BV_CAP = (4, 0, 0)
+UPPER_BV_CAP = (4, 3, 0)
 
 class Form(enum.Enum):
 	"""Texture or world import interpretation, for mapping or other needs."""
