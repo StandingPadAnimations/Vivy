@@ -100,19 +100,6 @@ def restart_layout(layout):
 		icon="ERROR")
 	col.label(text="to complete update")
 
-def upper_bv_layout(layout):
-	"""Warn about the upper bv limit"""
-	box = layout.box()
-	col = box.column()
-	alert_row = col.row()
-	alert_row.alert = True
-	alert_row.label(text="Your Blender version is above")
-	alert_row = col.row()
-	alert_row.alert = True
-	alert_row.label(text="the supported range. No support")
-	alert_row = col.row()
-	alert_row.alert = True
-	alert_row.label(text="will be provided!")
 
 # -----------------------------------------------------------------------------
 # UI class functions
@@ -303,8 +290,6 @@ class MCPREP_MT_3dview_add(bpy.types.Menu):
 		if addon_just_updated():
 			restart_layout(self.layout)
 			return
-		elif not env.valid_environment:
-			upper_bv_layout(layout)
 		layout = self.layout
 		props = context.scene.mcprep_props
 
@@ -756,8 +741,7 @@ class MCPREP_PT_world_imports(bpy.types.Panel):
 		if addon_just_updated():
 			# Don't draw restart_layout() here, as we already have a box
 			return
-		elif not env.valid_environment:
-			upper_bv_layout(self.layout)
+
 		layout = self.layout
 		split = layout.split()
 		col = split.column(align=True)
@@ -907,8 +891,7 @@ class MCPREP_PT_bridge(bpy.types.Panel):
 		if addon_just_updated():
 			restart_layout(self.layout)
 			return
-		elif not env.valid_environment:
-			upper_bv_layout(self.layout)
+
 		# bridge.panel_draw(self, context)
 		pass
 
@@ -925,8 +908,6 @@ class MCPREP_PT_world_tools(bpy.types.Panel):
 		if addon_just_updated():
 			restart_layout(layout)
 			return
-		elif not env.valid_environment:
-			upper_bv_layout(layout)
 
 		rw = layout.row()
 		col = rw.column()
@@ -982,8 +963,7 @@ class MCPREP_PT_skins(bpy.types.Panel):
 		if addon_just_updated():
 			restart_layout(layout)
 			return
-		elif not env.valid_environment:
-			upper_bv_layout(layout)
+
 		scn_props = context.scene.mcprep_props
 		sind = context.scene.mcprep_skins_list_index
 		mob_ind = context.scene.mcprep_props.mob_list_index
@@ -1098,8 +1078,6 @@ class MCPREP_PT_materials(bpy.types.Panel):
 		if addon_just_updated():
 			restart_layout(layout)
 			return
-		elif not env.valid_environment:
-			upper_bv_layout(layout)
 
 		row = layout.row()
 		# row.operator("mcprep.create_default_material")
@@ -1145,9 +1123,6 @@ class MCPREP_PT_materials_subsettings(bpy.types.Panel):
 		if addon_just_updated():
 			restart_layout(self.layout)
 			return
-		elif not env.valid_environment:
-			upper_bv_layout(self.layout)
-
 
 		b_row = self.layout.row()
 		b_col = b_row.column(align=False)
@@ -1707,9 +1682,6 @@ class MCPREP_PT_spawn(bpy.types.Panel):
 		if addon_just_updated():
 			restart_layout(self.layout)
 			return
-		elif not env.valid_environment:
-			upper_bv_layout(self.layout)
-
 		row = self.layout.row(align=True)
 		row.label(text="Click triangle to open")
 		ops = row.operator(
@@ -1731,9 +1703,6 @@ class MCPREP_PT_mob_spawner(bpy.types.Panel):
 		if addon_just_updated():
 			restart_layout(self.layout)
 			return
-		elif not env.valid_environment:
-			upper_bv_layout(self.layout)
-
 		is_obj_mode = context.mode == "OBJECT"
 		if not is_obj_mode:
 			draw_mode_warning(self.layout)
@@ -1762,9 +1731,6 @@ class MCPREP_PT_model_spawner(bpy.types.Panel):
 		if addon_just_updated():
 			restart_layout(self.layout)
 			return
-		elif not env.valid_environment:
-			upper_bv_layout(self.layout)
-
 		is_obj_mode = context.mode == "OBJECT"
 		if not is_obj_mode:
 			draw_mode_warning(self.layout)
@@ -1793,9 +1759,6 @@ class MCPREP_PT_item_spawner(bpy.types.Panel):
 		if addon_just_updated():
 			restart_layout(self.layout)
 			return
-		elif not env.valid_environment:
-			upper_bv_layout(self.layout)
-
 		is_obj_mode = context.mode == "OBJECT"
 		is_pose_mode = context.mode == "POSE"
 		if not is_obj_mode and not is_pose_mode:
@@ -1825,9 +1788,6 @@ class MCPREP_PT_effects_spawner(bpy.types.Panel):
 		if addon_just_updated():
 			restart_layout(self.layout)
 			return
-		elif not env.valid_environment:
-			upper_bv_layout(self.layout)
-
 		is_obj_mode = context.mode == "OBJECT"
 		if not is_obj_mode:
 			draw_mode_warning(self.layout)
@@ -1856,9 +1816,6 @@ class MCPREP_PT_entity_spawner(bpy.types.Panel):
 		if addon_just_updated():
 			restart_layout(self.layout)
 			return
-		elif not env.valid_environment:
-			upper_bv_layout(self.layout)
-
 		is_obj_mode = context.mode == "OBJECT"
 		if not is_obj_mode:
 			draw_mode_warning(self.layout)
@@ -1887,9 +1844,6 @@ class MCPREP_PT_meshswap_spawner(bpy.types.Panel):
 		if addon_just_updated():
 			restart_layout(self.layout)
 			return
-		elif not env.valid_environment:
-			upper_bv_layout(self.layout)
-
 		is_obj_mode = context.mode == "OBJECT"
 		if not is_obj_mode:
 			draw_mode_warning(self.layout)

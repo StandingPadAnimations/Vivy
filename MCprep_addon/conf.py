@@ -31,9 +31,6 @@ from bpy.utils.previews import ImagePreviewCollection
 # TYPING UTILITIES
 # -----------------------------------------------------------------------------
 
-# Upper supported Blender version
-UPPER_BV_CAP = (4, 3, 0)
-
 class Form(enum.Enum):
 	"""Texture or world import interpretation, for mapping or other needs."""
 	MC = "mc"
@@ -78,7 +75,6 @@ class MCprepEnv:
 		self.dev_file: Path = Path(os.path.dirname(__file__), "mcprep_dev.txt")
 
 		self.last_check_for_updated = 0
-		self.valid_environment: bool = True
 
 		# Check to see if there's a text file for a dev build. If so,
 		if self.dev_file.exists():
@@ -135,11 +131,6 @@ class MCprepEnv:
 		# The JSON file for Vivy's materials
 		self.vivy_material_json: Optional[Dict] = None
 		self.reload_vivy_json() # Get latest JSON data
-		
-		# Implement a hard cap for Blender versions
-		if hasattr(bpy.app, "version"):
-			if bpy.app.version > UPPER_BV_CAP:
-				self.valid_environment = False
 
 	def reload_vivy_json(self) -> None:
 		json_path = Path(os.path.join(os.path.dirname(__file__), "MCprep_resources", "vivy_materials.json"))
