@@ -1,7 +1,7 @@
 # Vivy
 My in-house fork of MCprep that gives more control to the user
 
-> ![NOTE]
+> [!NOTE]
 > Work is being done to make this better for public use
 
 # Why?
