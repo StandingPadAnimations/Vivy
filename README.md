@@ -1,6 +1,9 @@
 # Vivy
 My in-house fork of MCprep that gives more control to the user
 
+> ![NOTE]
+> Work is being done to make this better for public use
+
 # Why?
 I'm an MCprep maintainer, so it might seem strange that I would make a fork of MCprep, but hear me out for a bit.
 
@@ -21,8 +24,10 @@ As such, it's simply easier to make a fork, and implement those features in said
 ## So how does Vivy give more control?
 Vivy gives more control through MCprep's material generation, which is perhaps the most used feature of MCprep. This is done by throwing out MCprep's old system (although it's still technically accessible) and replacing it with a system where users can define custom materials using a blend file and some JSON.
 
-## Is there documentation on how to use this?
-Maybe in the future, but for now it's basically my in house fork of MCprep for personal use.
-
 # Why the name Vivy?
 It's based off of a light novel I got and I thought it was a nice name, hence the name Vivy for this project :D
+
+# What license is Vivy under?
+There are 2 parts to Vivy, the Vivy addon and [Vivy Components](https://github.com/StandingPadAnimations/Vivy-Components). The Vivy addon is what interacts with Blender, and is licensed under GPL. Vivy Components are what parse Vivy's JSON format, and is licensed under BSD 3-Clause. Vivy Components can also be used independently of Blender and could in theory be used to implement Vivy's system in other 3D programs.
+
+The reason for this split is because I prefer to use more permissive licenses in the code I write, but MCprep and BPY (the Blender Python API) are GPL, and thus the Vivy addon has to be GPL as well.
