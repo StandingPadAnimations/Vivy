@@ -1,8 +1,10 @@
 # Vivy
 My in-house fork of MCprep that gives more control to the user
 
-> [!NOTE]
-> Work is being done to make this better for public use
+> [!CAUTION]
+> This version of Vivy is now discontinued, a new Vivy addon is planned.
+>
+> Check https://www.standingpad.org/posts/2024/05/plans-for-a-new-vivy-addon/ for more details
 
 # Why?
 I'm an MCprep maintainer, so it might seem strange that I would make a fork of MCprep, but hear me out for a bit.
