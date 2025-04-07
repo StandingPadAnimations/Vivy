@@ -2,9 +2,11 @@
 My in-house fork of MCprep that gives more control to the user
 
 > [!CAUTION]
-> This version of Vivy is now discontinued, a new Vivy addon is planned.
+> ~~This version of Vivy is now discontinued, a new Vivy addon is planned.~~
 >
-> Check https://www.standingpad.org/posts/2024/05/plans-for-a-new-vivy-addon/ for more details
+> ~~Check https://www.standingpad.org/posts/2024/05/plans-for-a-new-vivy-addon/ for more details~~
+> 
+> With the merging of [PR 600](https://github.com/Moo-Ack-Productions/MCprep/pull/600), this is now an experimental feature in MCprep!
 
 # Why?
 I'm an MCprep maintainer, so it might seem strange that I would make a fork of MCprep, but hear me out for a bit.
